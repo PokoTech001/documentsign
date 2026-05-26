@@ -697,6 +697,11 @@
             display: inline-block;
             margin: 10px 0;
         }
+
+        @keyframes slideIn {
+            from { transform: translateX(100%); opacity: 0; }
+            to   { transform: translateX(0);    opacity: 1; }
+        }
     </style>
 </head>
 <body>
@@ -810,7 +815,7 @@
                         
                         <div class="recipients-list" id="vendorsList"></div>
                         
-                        <button class="sidebar-btn sidebar-btn-primary" id="sendBtn" style="display:none;" onclick="showEmailModal()">📤 Send Emails</button>
+                        <button class="sidebar-btn sidebar-btn-primary" id="sendBtn" style="display:none;" onclick="sendEmails()">📤 Send Emails</button>
                     </div>
                 </div>
             </div>
@@ -980,9 +985,20 @@
             
             renderVendors();
             updateSendBtn();
-            
+
             document.getElementById('dashView').classList.remove('active');
             document.getElementById('detailView').classList.add('active');
+
+            if (typeof firebase !== 'undefined') {
+                db.collection('signatures')
+                    .where('documentId', '==', currentDoc.id)
+                    .onSnapshot(snapshot => {
+                        snapshot.forEach(doc => {
+                            console.log('New signature from:', doc.data().vendorName);
+                            showNotification(`✓ ${doc.data().vendorName} signed the document!`);
+                        });
+                    });
+            }
         }
         
         function switchSigTab(tab) {
@@ -1152,7 +1168,62 @@ Best regards`;
                 alert('✓ Message copied to clipboard!');
             });
         }
-        
+
+        function sendEmails() {
+            if (!currentDoc || currentDoc.vendors.length === 0) return;
+
+            const btn = document.getElementById('sendBtn');
+            btn.disabled = true;
+            btn.textContent = '📧 Sending...';
+
+            const appLink = window.location.href;
+
+            currentDoc.vendors.forEach(vendor => {
+                fetch('/api/sendEmail', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        to: vendor.email,
+                        vendorName: vendor.name,
+                        documentName: currentDoc.name,
+                        appLink: appLink,
+                    }),
+                })
+                .then(res => res.json())
+                .then(data => {
+                    console.log('Email sent to:', vendor.email);
+                })
+                .catch(err => console.error('Error:', err));
+            });
+
+            setTimeout(() => {
+                btn.disabled = false;
+                btn.textContent = '✓ Emails Sent!';
+                alert('✅ Emails sent to all vendors!');
+                setTimeout(() => {
+                    btn.textContent = '📤 Send Emails';
+                }, 2000);
+            }, 2000);
+        }
+
+        function showNotification(message) {
+            const notif = document.createElement('div');
+            notif.textContent = message;
+            notif.style.cssText = `
+                position: fixed;
+                top: 20px;
+                right: 20px;
+                background: #16a34a;
+                color: white;
+                padding: 16px 24px;
+                border-radius: 8px;
+                z-index: 10000;
+                animation: slideIn 0.3s ease;
+            `;
+            document.body.appendChild(notif);
+            setTimeout(() => notif.remove(), 3000);
+        }
+
         function downloadDoc() {
             if (!currentDoc) return;
             const a = document.createElement('a');
@@ -1186,6 +1257,8 @@ Best regards`;
             }
             renderDocs();
         }
+
+                
     </script>
 </body>
 </html>
