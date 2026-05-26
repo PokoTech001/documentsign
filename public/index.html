@@ -1,0 +1,1191 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SignFlow - E-Signature Platform</title>
+    <link href="https://fonts.googleapis.com/css2?family=Great+Vibes&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        html, body {
+            width: 100%;
+            height: 100%;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+            background: linear-gradient(135deg, #f0f4f8 0%, #d9e2ec 100%);
+            min-height: 100vh;
+            color: #1a1a1a;
+        }
+        
+        .header {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-bottom: 1px solid #e2e8f0;
+            padding: 20px 30px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+        }
+        
+        .header-content {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-size: 24px;
+            font-weight: bold;
+            color: #1e40af;
+        }
+        
+        .logo-icon {
+            width: 40px;
+            height: 40px;
+            background: linear-gradient(135deg, #2563eb, #1e40af);
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 20px;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 40px 30px;
+        }
+        
+        .view {
+            display: none;
+        }
+        
+        .view.active {
+            display: block;
+        }
+        
+        .upload-box {
+            background: white;
+            border: 4px dashed #2563eb;
+            border-radius: 16px;
+            padding: 80px 40px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-bottom: 40px;
+        }
+        
+        .upload-box:hover {
+            background-color: #f0f7ff;
+            border-color: #1e40af;
+        }
+        
+        .upload-box h2 {
+            font-size: 32px;
+            margin-bottom: 16px;
+            color: #1a1a1a;
+        }
+        
+        .upload-box p {
+            font-size: 18px;
+            color: #64748b;
+            margin-bottom: 20px;
+        }
+        
+        .upload-icon {
+            font-size: 80px;
+            margin-bottom: 20px;
+        }
+        
+        .hidden-input {
+            display: none;
+        }
+        
+        .docs-section {
+            display: none;
+        }
+        
+        .docs-section.show {
+            display: block;
+        }
+        
+        .docs-title {
+            font-size: 28px;
+            margin-bottom: 24px;
+            color: #1a1a1a;
+        }
+        
+        .docs-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+            gap: 24px;
+            margin-bottom: 40px;
+        }
+        
+        .doc-card {
+            background: white;
+            border: 1px solid #e2e8f0;
+            border-radius: 12px;
+            overflow: hidden;
+            transition: all 0.3s ease;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        }
+        
+        .doc-card:hover {
+            box-shadow: 0 12px 24px rgba(0,0,0,0.15);
+            border-color: #2563eb;
+            transform: translateY(-4px);
+        }
+        
+        .doc-thumbnail {
+            width: 100%;
+            height: 200px;
+            background: linear-gradient(135deg, #f1f5f9, #e2e8f0);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 60px;
+        }
+        
+        .doc-content {
+            padding: 20px;
+        }
+        
+        .doc-title {
+            font-weight: 700;
+            margin-bottom: 8px;
+            font-size: 16px;
+            word-break: break-word;
+        }
+        
+        .doc-meta {
+            font-size: 13px;
+            color: #94a3b8;
+            margin-bottom: 16px;
+        }
+        
+        .doc-badges {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 16px;
+            flex-wrap: wrap;
+        }
+        
+        .badge {
+            font-size: 11px;
+            padding: 6px 12px;
+            border-radius: 4px;
+            font-weight: 600;
+        }
+        
+        .badge-pending {
+            background: #fef3c7;
+            color: #92400e;
+        }
+        
+        .badge-signed {
+            background: #dcfce7;
+            color: #166534;
+        }
+        
+        .doc-actions {
+            display: flex;
+            gap: 8px;
+        }
+        
+        .btn {
+            padding: 10px 16px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.2s ease;
+            font-size: 14px;
+        }
+        
+        .btn-primary {
+            background: #2563eb;
+            color: white;
+            flex: 1;
+        }
+        
+        .btn-primary:hover:not(:disabled) {
+            background: #1d4ed8;
+        }
+        
+        .btn-primary:disabled {
+            background: #cbd5e1;
+            cursor: not-allowed;
+        }
+        
+        .btn-danger {
+            background: #fee2e2;
+            color: #dc2626;
+            padding: 10px 8px;
+        }
+        
+        .btn-danger:hover {
+            background: #fecaca;
+        }
+        
+        .empty-msg {
+            text-align: center;
+            padding: 80px 20px;
+            color: #94a3b8;
+            font-size: 18px;
+        }
+        
+        .back-btn {
+            color: #2563eb;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 16px;
+            margin-bottom: 30px;
+        }
+        
+        .back-btn:hover {
+            text-decoration: underline;
+        }
+        
+        .detail-layout {
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+            gap: 32px;
+        }
+        
+        @media (max-width: 768px) {
+            .detail-layout {
+                grid-template-columns: 1fr;
+            }
+        }
+        
+        .doc-display-box {
+            background: white;
+            border: 1px solid #e2e8f0;
+            border-radius: 12px;
+            overflow: hidden;
+        }
+        
+        .doc-display-header {
+            background: #f1f5f9;
+            padding: 16px;
+            border-bottom: 1px solid #e2e8f0;
+        }
+        
+        .doc-display-header h3 {
+            font-weight: 600;
+            margin-bottom: 4px;
+        }
+        
+        .doc-display-header p {
+            font-size: 13px;
+            color: #64748b;
+        }
+        
+        .doc-viewer {
+            width: 100%;
+            height: 500px;
+            background: #f8fafc;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: auto;
+        }
+        
+        .doc-viewer img {
+            max-width: 100%;
+            max-height: 100%;
+            object-fit: contain;
+        }
+        
+        .sig-container {
+            background: white;
+            border: 2px solid #2563eb;
+            border-radius: 12px;
+            padding: 20px;
+            margin-top: 20px;
+            display: none;
+        }
+        
+        .sig-container.show {
+            display: block;
+        }
+        
+        .sig-container h3 {
+            font-weight: 600;
+            margin-bottom: 16px;
+            color: #1e40af;
+        }
+        
+        .sig-tabs {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 16px;
+            border-bottom: 2px solid #e2e8f0;
+        }
+        
+        .sig-tab {
+            padding: 10px 16px;
+            border: none;
+            background: none;
+            cursor: pointer;
+            font-weight: 600;
+            color: #64748b;
+            border-bottom: 3px solid transparent;
+            transition: all 0.2s ease;
+        }
+        
+        .sig-tab:hover {
+            color: #2563eb;
+        }
+        
+        .sig-tab.active {
+            color: #2563eb;
+            border-bottom-color: #2563eb;
+        }
+        
+        .sig-content {
+            display: none;
+        }
+        
+        .sig-content.active {
+            display: block;
+        }
+        
+        .draw-area p {
+            font-size: 14px;
+            color: #64748b;
+            margin-bottom: 12px;
+        }
+        
+        .signature-canvas {
+            width: 100%;
+            border: 2px solid #cbd5e1;
+            border-radius: 8px;
+            background: white;
+            cursor: crosshair;
+            display: block;
+            margin-bottom: 12px;
+        }
+        
+        .upload-area {
+            border: 2px dashed #cbd5e1;
+            border-radius: 8px;
+            padding: 30px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            margin-bottom: 12px;
+        }
+        
+        .upload-area:hover {
+            border-color: #2563eb;
+            background-color: #f0f7ff;
+        }
+        
+        .upload-area p {
+            font-size: 14px;
+            color: #64748b;
+        }
+        
+        .upload-area input {
+            display: none;
+        }
+        
+        .sig-preview {
+            width: 100%;
+            height: 120px;
+            background: #f8fafc;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 12px;
+            overflow: hidden;
+        }
+        
+        .sig-preview img {
+            max-width: 100%;
+            max-height: 100%;
+            object-fit: contain;
+        }
+        
+        .name-input {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #cbd5e1;
+            border-radius: 8px;
+            font-size: 14px;
+            margin-bottom: 12px;
+            font-family: inherit;
+        }
+        
+        .name-input:focus {
+            outline: none;
+            border-color: #2563eb;
+            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+        }
+        
+        .sig-preview-generated {
+            width: 100%;
+            height: 120px;
+            background: white;
+            border: 1px solid #cbd5e1;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 12px;
+            font-family: 'Great Vibes', cursive;
+            font-size: 48px;
+            color: #1a1a1a;
+            min-height: 100px;
+        }
+        
+        .canvas-buttons {
+            display: flex;
+            gap: 10px;
+        }
+        
+        .canvas-buttons button {
+            flex: 1;
+        }
+        
+        .sidebar-panel {
+            background: white;
+            border: 1px solid #e2e8f0;
+            border-radius: 12px;
+            padding: 24px;
+        }
+        
+        .sidebar-panel h3 {
+            font-weight: 600;
+            margin-bottom: 16px;
+            font-size: 16px;
+        }
+        
+        .panel-section {
+            margin-bottom: 24px;
+        }
+        
+        .panel-section:last-child {
+            margin-bottom: 0;
+        }
+        
+        .sidebar-btn {
+            width: 100%;
+            padding: 12px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 14px;
+            transition: all 0.2s ease;
+            margin-bottom: 8px;
+        }
+        
+        .sidebar-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        
+        .sidebar-btn-primary {
+            background: #2563eb;
+            color: white;
+        }
+        
+        .sidebar-btn-primary:hover:not(:disabled) {
+            background: #1d4ed8;
+        }
+        
+        .sidebar-btn-secondary {
+            background: #e2e8f0;
+            color: #1a1a1a;
+        }
+        
+        .sidebar-btn-secondary:hover:not(:disabled) {
+            background: #cbd5e1;
+        }
+        
+        .input-group {
+            background: #f8fafc;
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 12px;
+        }
+        
+        .input-group input {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #cbd5e1;
+            border-radius: 6px;
+            font-size: 13px;
+            margin-bottom: 8px;
+            font-family: inherit;
+        }
+        
+        .input-group input:focus {
+            outline: none;
+            border-color: #2563eb;
+            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+        }
+        
+        .recipients-list {
+            max-height: 250px;
+            overflow-y: auto;
+            margin-bottom: 12px;
+        }
+        
+        .recipient-item {
+            background: #f8fafc;
+            padding: 12px;
+            border-radius: 6px;
+            margin-bottom: 8px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 13px;
+        }
+        
+        .recipient-item strong {
+            display: block;
+            margin-bottom: 2px;
+        }
+        
+        .recipient-item small {
+            color: #94a3b8;
+        }
+        
+        .success-alert {
+            background: #dcfce7;
+            border: 1px solid #86efac;
+            color: #166534;
+            padding: 12px;
+            border-radius: 8px;
+            margin-top: 16px;
+            display: none;
+            font-weight: 600;
+        }
+        
+        .success-alert.show {
+            display: block;
+        }
+        
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+        }
+        
+        .modal-overlay.show {
+            display: flex;
+        }
+        
+        .modal-box {
+            background: white;
+            border-radius: 12px;
+            padding: 30px;
+            max-width: 600px;
+            width: 90%;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+        
+        .modal-box h2 {
+            margin-bottom: 20px;
+            color: #1a1a1a;
+        }
+        
+        .modal-section {
+            margin-bottom: 20px;
+        }
+        
+        .modal-section h3 {
+            font-weight: 600;
+            margin-bottom: 10px;
+            color: #1e40af;
+        }
+        
+        .modal-section p {
+            font-size: 14px;
+            color: #64748b;
+            line-height: 1.6;
+            margin-bottom: 10px;
+        }
+        
+        .recipients-display {
+            background: #f8fafc;
+            border: 1px solid #cbd5e1;
+            border-radius: 8px;
+            padding: 12px;
+            margin-bottom: 10px;
+            font-size: 13px;
+            word-break: break-all;
+            font-family: monospace;
+        }
+        
+        .message-display {
+            background: #f8fafc;
+            border: 1px solid #cbd5e1;
+            border-radius: 8px;
+            padding: 12px;
+            margin-bottom: 10px;
+            font-size: 13px;
+            white-space: pre-wrap;
+            line-height: 1.5;
+        }
+        
+        .modal-buttons {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+        }
+        
+        .modal-buttons button {
+            flex: 1;
+            padding: 12px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.2s ease;
+        }
+        
+        .modal-btn-primary {
+            background: #2563eb;
+            color: white;
+        }
+        
+        .modal-btn-primary:hover {
+            background: #1d4ed8;
+        }
+        
+        .modal-btn-secondary {
+            background: #e2e8f0;
+            color: #1a1a1a;
+        }
+        
+        .modal-btn-secondary:hover {
+            background: #cbd5e1;
+        }
+        
+        .success-badge {
+            background: #dcfce7;
+            color: #166534;
+            padding: 8px 12px;
+            border-radius: 6px;
+            font-weight: 600;
+            font-size: 13px;
+            display: inline-block;
+            margin: 10px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="header-content">
+            <div class="logo">
+                <div class="logo-icon">✓</div>
+                <span>SignFlow</span>
+            </div>
+            <div id="docCounter" style="font-size: 14px; color: #64748b;">0 documents</div>
+        </div>
+    </div>
+    
+    <div class="container">
+        <!-- DASHBOARD -->
+        <div id="dashView" class="view active">
+            <div class="upload-box" id="uploadBox">
+                <div class="upload-icon">📤</div>
+                <h2>Upload Document</h2>
+                <p>Click here to select a file</p>
+            </div>
+            
+            <input type="file" id="fileUpload" class="hidden-input" accept=".pdf,.png,.jpg,.jpeg,.doc,.docx">
+            
+            <div id="docsArea" class="docs-section">
+                <div class="docs-title">Your Documents</div>
+                <div id="docsList" class="docs-grid"></div>
+            </div>
+            
+            <div id="noDocsMsg" class="empty-msg">
+                No documents uploaded yet. Click above to upload your first document!
+            </div>
+        </div>
+        
+        <!-- DOCUMENT DETAIL -->
+        <div id="detailView" class="view">
+            <div class="back-btn" onclick="goBack()">← Back to Documents</div>
+            
+            <div class="detail-layout">
+                <!-- Left: Document -->
+                <div>
+                    <div class="doc-display-box">
+                        <div class="doc-display-header">
+                            <h3 id="detailTitle"></h3>
+                            <p id="detailSize"></p>
+                        </div>
+                        <div class="doc-viewer">
+                            <img id="detailImg" alt="Document">
+                        </div>
+                    </div>
+                    
+                    <!-- Signature Container -->
+                    <div id="sigBox" class="sig-container">
+                        <h3>✏️ Add Your Signature</h3>
+                        
+                        <div class="sig-tabs">
+                            <button class="sig-tab active" onclick="switchSigTab('draw')">✏️ Draw</button>
+                            <button class="sig-tab" onclick="switchSigTab('upload')">📤 Upload</button>
+                            <button class="sig-tab" onclick="switchSigTab('type')">🔤 Type Name</button>
+                        </div>
+                        
+                        <!-- Draw Tab -->
+                        <div id="drawTab" class="sig-content active">
+                            <p>Use your mouse to sign below</p>
+                            <canvas id="sigPad" class="signature-canvas" width="500" height="150"></canvas>
+                            <div class="canvas-buttons">
+                                <button class="btn btn-primary" onclick="clearSig()">Clear</button>
+                                <button class="btn btn-primary" onclick="saveSig('draw')">✓ Use This</button>
+                            </div>
+                        </div>
+                        
+                        <!-- Upload Tab -->
+                        <div id="uploadTab" class="sig-content">
+                            <div class="upload-area" id="uploadArea">
+                                <p>📤 Click to upload your signature image</p>
+                            </div>
+                            <div class="sig-preview" id="uploadPreview" style="display:none;"></div>
+                            <button class="btn btn-primary" id="uploadSigBtn" onclick="saveSig('upload')" style="display:none;">✓ Use This Signature</button>
+                            <input type="file" id="sigUpload" class="hidden-input" accept=".png,.jpg,.jpeg,.gif">
+                        </div>
+                        
+                        <!-- Type Name Tab -->
+                        <div id="typeTab" class="sig-content">
+                            <p style="font-size: 14px; color: #64748b; margin-bottom: 12px;">Type your name to generate a signature</p>
+                            <input type="text" id="nameInput" class="name-input" placeholder="Enter your name" oninput="generateSignature()">
+                            <div class="sig-preview-generated" id="sigPreview">Your Name</div>
+                            <button class="btn btn-primary" onclick="saveSig('type')">✓ Use This Signature</button>
+                        </div>
+                    </div>
+                    
+                    <div id="successMsg" class="success-alert">
+                        ✓ Document signed successfully!
+                    </div>
+                </div>
+                
+                <!-- Right: Sidebar -->
+                <div class="sidebar-panel">
+                    <div class="panel-section">
+                        <button class="sidebar-btn sidebar-btn-primary" id="signBtn" onclick="openSigBox()">✍️ Sign Document</button>
+                        <button class="sidebar-btn sidebar-btn-secondary" id="updateBtn" style="display:none;" onclick="openSigBox()">✏️ Update Signature</button>
+                        <button class="sidebar-btn sidebar-btn-secondary" id="downloadBtn" style="display:none;" onclick="downloadDoc()">⬇️ Download</button>
+                    </div>
+                    
+                    <div class="panel-section">
+                        <h3>📧 Send for Signature</h3>
+                        <div class="input-group">
+                            <input type="text" id="vendorNameInput" placeholder="Vendor name">
+                            <input type="email" id="vendorEmailInput" placeholder="Email address">
+                            <button class="sidebar-btn sidebar-btn-primary" onclick="addVendor()">+ Add Recipient</button>
+                        </div>
+                        
+                        <div class="recipients-list" id="vendorsList"></div>
+                        
+                        <button class="sidebar-btn sidebar-btn-primary" id="sendBtn" style="display:none;" onclick="showEmailModal()">📤 Send Emails</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Email Modal -->
+    <div id="emailModal" class="modal-overlay">
+        <div class="modal-box">
+            <h2>📧 Send Document for Signature</h2>
+            
+            <div class="modal-section">
+                <h3>Recipients</h3>
+                <div class="recipients-display" id="modalRecipients"></div>
+                <button class="sidebar-btn sidebar-btn-secondary" onclick="copyRecipients()" style="margin-top: 10px;">📋 Copy Recipients</button>
+            </div>
+            
+            <div class="modal-section">
+                <h3>Email Message</h3>
+                <div class="message-display" id="modalMessage"></div>
+                <button class="sidebar-btn sidebar-btn-secondary" onclick="copyMessage()" style="margin-top: 10px;">📋 Copy Message</button>
+            </div>
+            
+            <div class="modal-section">
+                <h3>How to Send:</h3>
+                <p>1️⃣ Copy the recipients email(s) above</p>
+                <p>2️⃣ Open Gmail, Outlook, or your email app</p>
+                <p>3️⃣ Paste recipients in "To" field</p>
+                <p>4️⃣ Copy and paste the message</p>
+                <p>5️⃣ Send! ✉️</p>
+            </div>
+            
+            <div class="success-badge">✓ Done! Now send from your email</div>
+            
+            <div class="modal-buttons">
+                <button class="modal-btn-primary" onclick="closeEmailModal()">Close</button>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        let docs = [];
+        let currentDoc = null;
+        let isDrawing = false;
+        let canvas = null;
+        let ctx = null;
+        let currentSigType = 'draw';
+        let currentSigData = null;
+        
+        window.addEventListener('load', function() {
+            canvas = document.getElementById('sigPad');
+            ctx = canvas.getContext('2d');
+            
+            const uploadBox = document.getElementById('uploadBox');
+            const fileInput = document.getElementById('fileUpload');
+            
+            uploadBox.addEventListener('click', () => fileInput.click());
+            fileInput.addEventListener('change', handleUpload);
+            
+            const uploadArea = document.getElementById('uploadArea');
+            const sigUpload = document.getElementById('sigUpload');
+            
+            uploadArea.addEventListener('click', () => sigUpload.click());
+            sigUpload.addEventListener('change', handleSigUpload);
+            
+            canvas.addEventListener('mousedown', startDraw);
+            canvas.addEventListener('mousemove', draw);
+            canvas.addEventListener('mouseup', stopDraw);
+            canvas.addEventListener('mouseout', stopDraw);
+            
+            loadDocs();
+        });
+        
+        function handleUpload(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+            
+            const reader = new FileReader();
+            reader.onload = function(event) {
+                const newDoc = {
+                    id: Date.now(),
+                    name: file.name,
+                    size: Math.round(file.size / 1024) + ' KB',
+                    data: event.target.result,
+                    signed: false,
+                    vendors: []
+                };
+                
+                docs.unshift(newDoc);
+                saveDocs();
+                renderDocs();
+                e.target.value = '';
+            };
+            reader.readAsDataURL(file);
+        }
+        
+        function handleSigUpload(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+            
+            const reader = new FileReader();
+            reader.onload = function(event) {
+                currentSigData = event.target.result;
+                const preview = document.getElementById('uploadPreview');
+                preview.innerHTML = `<img src="${event.target.result}" alt="Signature">`;
+                preview.style.display = 'flex';
+                document.getElementById('uploadSigBtn').style.display = 'block';
+            };
+            reader.readAsDataURL(file);
+        }
+        
+        function renderDocs() {
+            const counter = document.getElementById('docCounter');
+            const noMsg = document.getElementById('noDocsMsg');
+            const area = document.getElementById('docsArea');
+            const list = document.getElementById('docsList');
+            
+            counter.textContent = docs.length + ' document' + (docs.length !== 1 ? 's' : '');
+            
+            if (docs.length === 0) {
+                noMsg.style.display = 'block';
+                area.classList.remove('show');
+                return;
+            }
+            
+            noMsg.style.display = 'none';
+            area.classList.add('show');
+            
+            list.innerHTML = docs.map(doc => `
+                <div class="doc-card">
+                    <div class="doc-thumbnail">📄</div>
+                    <div class="doc-content">
+                        <div class="doc-title">${doc.name}</div>
+                        <div class="doc-meta">${doc.size}</div>
+                        <div class="doc-badges">
+                            ${doc.signed ? '<span class="badge badge-signed">✓ Signed</span>' : '<span class="badge badge-pending">⏱ Pending</span>'}
+                            ${doc.vendors.length > 0 ? `<span class="badge badge-pending">${doc.vendors.length} recipients</span>` : ''}
+                        </div>
+                        <div class="doc-actions">
+                            <button class="btn btn-primary" onclick="openDoc(${doc.id})">Open</button>
+                            <button class="btn btn-danger" onclick="delDoc(${doc.id})">🗑</button>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        }
+        
+        function openDoc(id) {
+            currentDoc = docs.find(d => d.id === id);
+            if (!currentDoc) return;
+            
+            document.getElementById('detailTitle').textContent = currentDoc.name;
+            document.getElementById('detailSize').textContent = currentDoc.size;
+            document.getElementById('detailImg').src = currentDoc.data;
+            
+            if (currentDoc.signed) {
+                document.getElementById('signBtn').style.display = 'none';
+                document.getElementById('updateBtn').style.display = 'block';
+                document.getElementById('downloadBtn').style.display = 'block';
+                document.getElementById('successMsg').classList.add('show');
+            } else {
+                document.getElementById('signBtn').style.display = 'block';
+                document.getElementById('updateBtn').style.display = 'none';
+                document.getElementById('downloadBtn').style.display = 'none';
+                document.getElementById('successMsg').classList.remove('show');
+            }
+            
+            renderVendors();
+            updateSendBtn();
+            
+            document.getElementById('dashView').classList.remove('active');
+            document.getElementById('detailView').classList.add('active');
+        }
+        
+        function switchSigTab(tab) {
+            currentSigType = tab;
+            document.querySelectorAll('.sig-tab').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.sig-content').forEach(c => c.classList.remove('active'));
+            
+            event.target.classList.add('active');
+            document.getElementById(tab + 'Tab').classList.add('active');
+            
+            if (tab === 'draw') {
+                clearSig();
+            }
+        }
+        
+        function generateSignature() {
+            const name = document.getElementById('nameInput').value;
+            const preview = document.getElementById('sigPreview');
+            preview.textContent = name || 'Your Name';
+        }
+        
+        function openSigBox() {
+            document.getElementById('sigBox').classList.add('show');
+            clearSig();
+        }
+        
+        function startDraw(e) {
+            isDrawing = true;
+            const rect = canvas.getBoundingClientRect();
+            ctx.beginPath();
+            ctx.moveTo(e.clientX - rect.left, e.clientY - rect.top);
+        }
+        
+        function draw(e) {
+            if (!isDrawing) return;
+            const rect = canvas.getBoundingClientRect();
+            ctx.lineWidth = 2.5;
+            ctx.lineCap = 'round';
+            ctx.lineJoin = 'round';
+            ctx.strokeStyle = '#1a1a1a';
+            ctx.lineTo(e.clientX - rect.left, e.clientY - rect.top);
+            ctx.stroke();
+        }
+        
+        function stopDraw() {
+            isDrawing = false;
+        }
+        
+        function clearSig() {
+            ctx.fillStyle = 'white';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+        }
+        
+        function saveSig(type) {
+            if (!currentDoc) return;
+            currentDoc.signed = true;
+            saveDocs();
+            
+            document.getElementById('sigBox').classList.remove('show');
+            document.getElementById('signBtn').style.display = 'none';
+            document.getElementById('updateBtn').style.display = 'block';
+            document.getElementById('downloadBtn').style.display = 'block';
+            document.getElementById('successMsg').classList.add('show');
+            
+            updateSendBtn();
+            
+            setTimeout(() => {
+                document.getElementById('successMsg').classList.remove('show');
+            }, 3000);
+        }
+        
+        function addVendor() {
+            const name = document.getElementById('vendorNameInput').value.trim();
+            const email = document.getElementById('vendorEmailInput').value.trim();
+            
+            if (!name || !email) {
+                alert('Fill in both fields');
+                return;
+            }
+            
+            if (!currentDoc) return;
+            
+            currentDoc.vendors.push({
+                id: Date.now(),
+                name: name,
+                email: email
+            });
+            
+            saveDocs();
+            document.getElementById('vendorNameInput').value = '';
+            document.getElementById('vendorEmailInput').value = '';
+            renderVendors();
+            updateSendBtn();
+        }
+        
+        function renderVendors() {
+            const list = document.getElementById('vendorsList');
+            
+            if (!currentDoc || currentDoc.vendors.length === 0) {
+                list.innerHTML = '';
+                return;
+            }
+            
+            list.innerHTML = currentDoc.vendors.map(v => `
+                <div class="recipient-item">
+                    <div>
+                        <strong>${v.name}</strong>
+                        <small>${v.email}</small>
+                    </div>
+                    <button class="btn btn-danger" onclick="removeVendor(${v.id})">✕</button>
+                </div>
+            `).join('');
+        }
+        
+        function removeVendor(id) {
+            if (!currentDoc) return;
+            currentDoc.vendors = currentDoc.vendors.filter(v => v.id !== id);
+            saveDocs();
+            renderVendors();
+            updateSendBtn();
+        }
+        
+        function updateSendBtn() {
+            const btn = document.getElementById('sendBtn');
+            if (currentDoc && currentDoc.signed && currentDoc.vendors.length > 0) {
+                btn.style.display = 'block';
+            } else {
+                btn.style.display = 'none';
+            }
+        }
+        
+        function showEmailModal() {
+            if (!currentDoc) return;
+            
+            const recipients = currentDoc.vendors.map(v => v.email).join(', ');
+            const message = `Hi,
+
+Please review and sign the attached document: ${currentDoc.name}
+
+Document Details:
+- Document: ${currentDoc.name}
+- Size: ${currentDoc.size}
+- Sent on: ${new Date().toLocaleDateString()}
+
+Thank you!
+Best regards`;
+            
+            document.getElementById('modalRecipients').textContent = recipients;
+            document.getElementById('modalMessage').textContent = message;
+            document.getElementById('emailModal').classList.add('show');
+        }
+        
+        function closeEmailModal() {
+            document.getElementById('emailModal').classList.remove('show');
+        }
+        
+        function copyRecipients() {
+            const text = document.getElementById('modalRecipients').textContent;
+            navigator.clipboard.writeText(text).then(() => {
+                alert('✓ Recipients copied to clipboard!');
+            });
+        }
+        
+        function copyMessage() {
+            const text = document.getElementById('modalMessage').textContent;
+            navigator.clipboard.writeText(text).then(() => {
+                alert('✓ Message copied to clipboard!');
+            });
+        }
+        
+        function downloadDoc() {
+            if (!currentDoc) return;
+            const a = document.createElement('a');
+            a.href = currentDoc.data;
+            a.download = currentDoc.name;
+            a.click();
+        }
+        
+        function delDoc(id) {
+            if (!confirm('Delete this document?')) return;
+            docs = docs.filter(d => d.id !== id);
+            saveDocs();
+            renderDocs();
+        }
+        
+        function goBack() {
+            currentDoc = null;
+            document.getElementById('detailView').classList.remove('active');
+            document.getElementById('dashView').classList.add('active');
+            document.getElementById('sigBox').classList.remove('show');
+        }
+        
+        function saveDocs() {
+            localStorage.setItem('signflow_final', JSON.stringify(docs));
+        }
+        
+        function loadDocs() {
+            const saved = localStorage.getItem('signflow_final');
+            if (saved) {
+                docs = JSON.parse(saved);
+            }
+            renderDocs();
+        }
+    </script>
+</body>
+</html>
