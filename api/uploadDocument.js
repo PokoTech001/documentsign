@@ -1,4 +1,3 @@
-const { db } = require('./_firebase');
 const { supabase } = require('./_supabase');
 const crypto = require('crypto');
 
@@ -12,20 +11,18 @@ export default async function handler(req, res) {
     const base64 = data.split(',')[1];
     const buffer = Buffer.from(base64, 'base64');
 
-    const { error } = await supabase.storage
+    const { error: storageError } = await supabase.storage
       .from('documents')
       .upload(`pdfs/${docId}/document.pdf`, buffer, {
         contentType: 'application/pdf',
         upsert: true,
       });
+    if (storageError) throw storageError;
 
-    if (error) throw error;
-
-    await db.collection('documents').doc(docId).set({
-      name,
-      status: 'pending',
-      createdAt: new Date().toISOString(),
-    });
+    const { error: dbError } = await supabase
+      .from('documents')
+      .insert({ id: docId, name, status: 'pending' });
+    if (dbError) throw dbError;
 
     res.status(200).json({ success: true, docId });
   } catch (err) {

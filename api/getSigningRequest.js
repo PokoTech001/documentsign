@@ -1,4 +1,3 @@
-const { db } = require('./_firebase');
 const { supabase } = require('./_supabase');
 
 export default async function handler(req, res) {
@@ -8,51 +7,51 @@ export default async function handler(req, res) {
   if (!token) return res.status(400).json({ error: 'Token required' });
 
   try {
-    const tokenDoc = await db.collection('tokens').doc(token).get();
-    if (!tokenDoc.exists) return res.status(404).json({ error: 'Invalid signing link' });
+    const { data: tokenRow, error: tokenError } = await supabase
+      .from('tokens')
+      .select('*')
+      .eq('token', token)
+      .single();
 
-    const { docId, signerId, expiry } = tokenDoc.data();
+    if (tokenError || !tokenRow) return res.status(404).json({ error: 'Invalid signing link' });
 
-    if (new Date(expiry) < new Date()) {
+    if (new Date(tokenRow.expiry) < new Date()) {
       return res.status(410).json({ error: 'This signing link has expired' });
     }
 
-    const [signerDoc, documentDoc] = await Promise.all([
-      db.collection('documents').doc(docId).collection('signers').doc(signerId).get(),
-      db.collection('documents').doc(docId).get(),
+    const { doc_id: docId, signer_id: signerId } = tokenRow;
+
+    const [{ data: signer, error: signerError }, { data: document, error: docError }] = await Promise.all([
+      supabase.from('signers').select('*').eq('id', signerId).single(),
+      supabase.from('documents').select('*').eq('id', docId).single(),
     ]);
 
-    if (!signerDoc.exists || !documentDoc.exists) {
+    if (signerError || docError || !signer || !document) {
       return res.status(404).json({ error: 'Document not found' });
     }
 
-    const signerData = signerDoc.data();
-    const documentData = documentDoc.data();
-
-    if (signerData.status === 'signed') {
+    if (signer.status === 'signed') {
       return res.status(200).json({
         alreadySigned: true,
-        documentName: documentData.name,
-        signerName: signerData.name,
+        documentName: document.name,
+        signerName: signer.name,
       });
     }
 
     const { data: blob, error: downloadError } = await supabase.storage
       .from('documents')
       .download(`pdfs/${docId}/document.pdf`);
-
     if (downloadError) throw downloadError;
 
     const pdfBuffer = Buffer.from(await blob.arrayBuffer());
-    const pdfBase64 = pdfBuffer.toString('base64');
 
     res.status(200).json({
       alreadySigned: false,
       docId,
       signerId,
-      documentName: documentData.name,
-      signerName: signerData.name,
-      pdfData: `data:application/pdf;base64,${pdfBase64}`,
+      documentName: document.name,
+      signerName: signer.name,
+      pdfData: `data:application/pdf;base64,${pdfBuffer.toString('base64')}`,
     });
   } catch (err) {
     res.status(500).json({ error: err.message });

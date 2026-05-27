@@ -4,7 +4,6 @@
   "dependencies": {
     "@sendgrid/mail": "^7.7.0",
     "@supabase/supabase-js": "^2.39.0",
-    "firebase-admin": "^11.0.0",
     "pdf-lib": "^1.17.1"
   }
 }

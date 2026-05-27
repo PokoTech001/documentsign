@@ -1,4 +1,4 @@
-const { db } = require('./_firebase');
+const { supabase } = require('./_supabase');
 
 export default async function handler(req, res) {
   if (req.method !== 'GET') return res.status(405).end();
@@ -7,21 +7,34 @@ export default async function handler(req, res) {
   if (!docId) return res.status(400).json({ error: 'docId required' });
 
   try {
-    const [docSnap, signersSnap] = await Promise.all([
-      db.collection('documents').doc(docId).get(),
-      db.collection('documents').doc(docId).collection('signers').get(),
-    ]);
+    const { data: document, error: docError } = await supabase
+      .from('documents')
+      .select('*')
+      .eq('id', docId)
+      .single();
 
-    if (!docSnap.exists) return res.status(404).json({ error: 'Document not found' });
+    if (docError || !document) return res.status(404).json({ error: 'Document not found' });
 
-    const { name, status, createdAt } = docSnap.data();
+    const { data: signers, error: signersError } = await supabase
+      .from('signers')
+      .select('id, name, email, status, signed_at')
+      .eq('doc_id', docId);
 
-    const signers = signersSnap.docs.map(d => {
-      const { name: signerName, email, status: signerStatus, signedAt } = d.data();
-      return { id: d.id, name: signerName, email, status: signerStatus, signedAt };
+    if (signersError) throw signersError;
+
+    res.status(200).json({
+      docId,
+      name: document.name,
+      status: document.status,
+      createdAt: document.created_at,
+      signers: signers.map(s => ({
+        id: s.id,
+        name: s.name,
+        email: s.email,
+        status: s.status,
+        signedAt: s.signed_at,
+      })),
     });
-
-    res.status(200).json({ docId, name, status, createdAt, signers });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }

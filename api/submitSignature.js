@@ -1,4 +1,3 @@
-const { db } = require('./_firebase');
 const { supabase } = require('./_supabase');
 const { PDFDocument } = require('pdf-lib');
 const sgMail = require('@sendgrid/mail');
@@ -9,29 +8,27 @@ async function generateFinalPDF(docId) {
   const { data: blob, error } = await supabase.storage
     .from('documents')
     .download(`pdfs/${docId}/document.pdf`);
-
   if (error) throw error;
 
-  const pdfBuffer = Buffer.from(await blob.arrayBuffer());
-  const pdfDoc = await PDFDocument.load(pdfBuffer);
+  const pdfDoc = await PDFDocument.load(Buffer.from(await blob.arrayBuffer()));
   const firstPage = pdfDoc.getPages()[0];
   const { width } = firstPage.getSize();
 
-  const signersSnap = await db.collection('documents').doc(docId)
-    .collection('signers').orderBy('signedAt').get();
+  const { data: signers } = await supabase
+    .from('signers')
+    .select('signature_data')
+    .eq('doc_id', docId)
+    .order('signed_at', { ascending: true });
 
   const sigWidth = width * 0.25;
   let yOffset = 30;
 
-  for (const snap of signersSnap.docs) {
-    const { signatureData } = snap.data();
-    if (!signatureData) continue;
+  for (const signer of signers) {
+    if (!signer.signature_data) continue;
 
-    const sigBase64 = signatureData.split(',')[1];
-    const sigBuffer = Buffer.from(sigBase64, 'base64');
-
-    const isJpeg = signatureData.startsWith('data:image/jpeg') ||
-                   signatureData.startsWith('data:image/jpg');
+    const sigBuffer = Buffer.from(signer.signature_data.split(',')[1], 'base64');
+    const isJpeg = signer.signature_data.startsWith('data:image/jpeg') ||
+                   signer.signature_data.startsWith('data:image/jpg');
     const sigImage = isJpeg
       ? await pdfDoc.embedJpg(sigBuffer)
       : await pdfDoc.embedPng(sigBuffer);
@@ -41,8 +38,7 @@ async function generateFinalPDF(docId) {
     yOffset += sh + 15;
   }
 
-  const finalBytes = await pdfDoc.save();
-  const finalBuffer = Buffer.from(finalBytes);
+  const finalBuffer = Buffer.from(await pdfDoc.save());
 
   const { error: uploadError } = await supabase.storage
     .from('documents')
@@ -50,37 +46,32 @@ async function generateFinalPDF(docId) {
       contentType: 'application/pdf',
       upsert: true,
     });
-
   if (uploadError) throw uploadError;
 
   return finalBuffer;
 }
 
 async function emailFinalPDF(docId, finalBuffer) {
-  const [docSnap, signersSnap] = await Promise.all([
-    db.collection('documents').doc(docId).get(),
-    db.collection('documents').doc(docId).collection('signers').get(),
-  ]);
+  const { data: document } = await supabase.from('documents').select('name').eq('id', docId).single();
+  const { data: signers } = await supabase.from('signers').select('email').eq('doc_id', docId);
 
-  const { name } = docSnap.data();
   const base64PDF = finalBuffer.toString('base64');
-  const emails = signersSnap.docs.map(d => d.data().email);
 
-  for (const email of emails) {
+  for (const signer of signers) {
     await sgMail.send({
-      to: email,
+      to: signer.email,
       from: process.env.FROM_EMAIL,
-      subject: `Fully Signed: "${name}"`,
+      subject: `Fully Signed: "${document.name}"`,
       html: `
         <div style="font-family:sans-serif;max-width:600px;margin:0 auto;">
           <h2 style="color:#166534;">All Parties Have Signed</h2>
-          <p>The document <strong>${name}</strong> has been signed by all parties.</p>
+          <p>The document <strong>${document.name}</strong> has been signed by all parties.</p>
           <p>Please find the fully signed document attached.</p>
         </div>
       `,
       attachments: [{
         content: base64PDF,
-        filename: `signed_${name}`,
+        filename: `signed_${document.name}`,
         type: 'application/pdf',
         disposition: 'attachment',
       }],
@@ -94,38 +85,41 @@ export default async function handler(req, res) {
   const { token, signatureData } = req.body;
 
   try {
-    const tokenDoc = await db.collection('tokens').doc(token).get();
-    if (!tokenDoc.exists) return res.status(404).json({ error: 'Invalid token' });
+    const { data: tokenRow, error: tokenError } = await supabase
+      .from('tokens')
+      .select('*')
+      .eq('token', token)
+      .single();
 
-    const { docId, signerId, expiry } = tokenDoc.data();
+    if (tokenError || !tokenRow) return res.status(404).json({ error: 'Invalid token' });
 
-    if (new Date(expiry) < new Date()) {
+    if (new Date(tokenRow.expiry) < new Date()) {
       return res.status(410).json({ error: 'Signing link has expired' });
     }
 
-    const signerRef = db.collection('documents').doc(docId)
-      .collection('signers').doc(signerId);
-    const signerSnap = await signerRef.get();
+    const { doc_id: docId, signer_id: signerId } = tokenRow;
 
-    if (signerSnap.data().status === 'signed') {
+    const { data: signer } = await supabase.from('signers').select('status').eq('id', signerId).single();
+    if (signer.status === 'signed') {
       return res.status(400).json({ error: 'Already signed' });
     }
 
-    await signerRef.update({
+    await supabase.from('signers').update({
       status: 'signed',
-      signedAt: new Date().toISOString(),
-      signatureData,
-    });
+      signed_at: new Date().toISOString(),
+      signature_data: signatureData,
+    }).eq('id', signerId);
 
-    const allSignersSnap = await db.collection('documents').doc(docId)
-      .collection('signers').get();
-    const allSigned = allSignersSnap.docs.every(d =>
-      d.id === signerId ? true : d.data().status === 'signed'
-    );
+    const { data: allSigners } = await supabase
+      .from('signers')
+      .select('status')
+      .eq('doc_id', docId);
+
+    const allSigned = allSigners.every(s => s.status === 'signed');
 
     if (allSigned) {
       const finalBuffer = await generateFinalPDF(docId);
-      await db.collection('documents').doc(docId).update({ status: 'completed' });
+      await supabase.from('documents').update({ status: 'completed' }).eq('id', docId);
       await emailFinalPDF(docId, finalBuffer);
     }
 

@@ -1,4 +1,3 @@
-const { db } = require('./_firebase');
 const { supabase } = require('./_supabase');
 const sgMail = require('@sendgrid/mail');
 const crypto = require('crypto');
@@ -15,44 +14,43 @@ export default async function handler(req, res) {
     const base64 = pdfData.split(',')[1];
     const buffer = Buffer.from(base64, 'base64');
 
-    const { error: uploadError } = await supabase.storage
+    const { error: storageError } = await supabase.storage
       .from('documents')
       .upload(`pdfs/${docId}/document.pdf`, buffer, {
         contentType: 'application/pdf',
         upsert: true,
       });
+    if (storageError) throw storageError;
 
-    if (uploadError) throw uploadError;
+    const { error: docError } = await supabase
+      .from('documents')
+      .insert({ id: docId, name: docName, status: 'pending' });
+    if (docError) throw docError;
 
-    await db.collection('documents').doc(docId).set({
-      name: docName,
-      status: 'pending',
-      createdAt: new Date().toISOString(),
-    });
-
-    const signerResults = [];
     const expiry = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString();
+    const signerResults = [];
 
     for (const signer of signers) {
       const signerId = crypto.randomUUID();
       const token = crypto.randomUUID();
 
-      await db.collection('documents').doc(docId)
-        .collection('signers').doc(signerId).set({
+      const { error: signerError } = await supabase
+        .from('signers')
+        .insert({
+          id: signerId,
+          doc_id: docId,
           name: signer.name,
           email: signer.email,
           token,
           status: 'pending',
-          tokenExpiry: expiry,
-          signedAt: null,
-          signatureData: null,
+          token_expiry: expiry,
         });
+      if (signerError) throw signerError;
 
-      await db.collection('tokens').doc(token).set({
-        docId,
-        signerId,
-        expiry,
-      });
+      const { error: tokenError } = await supabase
+        .from('tokens')
+        .insert({ token, doc_id: docId, signer_id: signerId, expiry });
+      if (tokenError) throw tokenError;
 
       const signingLink = `${appUrl}/sign.html?token=${token}`;
 
@@ -64,7 +62,7 @@ export default async function handler(req, res) {
           <div style="font-family:sans-serif;max-width:600px;margin:0 auto;">
             <h2 style="color:#1e40af;">Document Signature Request</h2>
             <p>Hi ${signer.name},</p>
-            <p>You have been requested to sign the document: <strong>${docName}</strong></p>
+            <p>You have been requested to sign: <strong>${docName}</strong></p>
             <p style="margin:30px 0;">
               <a href="${signingLink}"
                  style="background:#2563eb;color:white;padding:14px 28px;border-radius:6px;text-decoration:none;font-weight:bold;display:inline-block;">
