@@ -222,6 +222,10 @@
                         <button class="sidebar-btn sidebar-btn-primary" id="signBtn" onclick="openSigBox()">✍️ Sign Document</button>
                         <button class="sidebar-btn sidebar-btn-secondary" id="updateBtn" style="display:none;" onclick="openSigBox()">✏️ Update Signature</button>
                         <button class="sidebar-btn sidebar-btn-secondary" id="downloadBtn" style="display:none;" onclick="downloadDoc()">⬇️ Download</button>
+                        <div id="ownerFieldStatus" style="display:none;margin-top:4px;padding:8px 10px;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:6px;align-items:center;justify-content:space-between;font-size:12px;">
+                            <span style="color:#166534;font-weight:600;">✓ Signature field placed</span>
+                            <button onclick="enterOwnerPlacementMode()" style="background:none;border:none;color:#2563eb;font-size:12px;font-weight:600;cursor:pointer;padding:0;">Reposition</button>
+                        </div>
                     </div>
 
                     <div class="panel-section">
@@ -298,7 +302,7 @@
             if (!file) return;
             const reader = new FileReader();
             reader.onload = function(event) {
-                docs.unshift({ id: Date.now(), name: file.name, size: Math.round(file.size / 1024) + ' KB', data: event.target.result, signed: false, vendors: [], ownerSigField: null });
+                docs.unshift({ id: Date.now(), name: file.name, size: Math.round(file.size / 1024) + ' KB', data: event.target.result, originalData: event.target.result, signed: false, vendors: [], ownerSigField: null });
                 saveDocs();
                 renderDocs();
                 e.target.value = '';
@@ -382,6 +386,7 @@
 
             renderVendors();
             updateSendBtn();
+            renderOwnerFieldStatus();
 
             if (currentDoc.firebaseDocId) {
                 document.getElementById('statusPanel').style.display = 'block';
@@ -454,6 +459,7 @@
                     saveDocs();
                     exitPlacementMode();
                     renderFieldOverlay();
+                    renderOwnerFieldStatus();
                     document.getElementById('sigBox').classList.add('show');
                     clearSig();
                 } else {
@@ -480,6 +486,12 @@
             const overlayCanvas = document.getElementById('overlayCanvas');
             overlayCanvas.style.pointerEvents = 'all';
             overlayCanvas.style.cursor = 'crosshair';
+        }
+
+        function renderOwnerFieldStatus() {
+            const el = document.getElementById('ownerFieldStatus');
+            if (!el) return;
+            el.style.display = (currentDoc && isPDF(currentDoc) && currentDoc.ownerSigField) ? 'flex' : 'none';
         }
 
         function enterOwnerPlacementMode() {
@@ -678,7 +690,8 @@
 
         async function embedSigInPDF(sigDataUrl) {
             const { PDFDocument } = PDFLib;
-            const pdfBase64 = currentDoc.data.split(',')[1];
+            const sourceData = currentDoc.originalData || currentDoc.data;
+            const pdfBase64 = sourceData.split(',')[1];
             const pdfBinary = atob(pdfBase64);
             const pdfBytes = new Uint8Array(pdfBinary.length);
             for (let i = 0; i < pdfBinary.length; i++) pdfBytes[i] = pdfBinary.charCodeAt(i);
