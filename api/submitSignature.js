@@ -16,12 +16,9 @@ async function generateFinalPDF(docId) {
 
   const { data: signers } = await supabase
     .from('signers')
-    .select('signature_data')
+    .select('signature_data, sig_x, sig_y, sig_w, sig_h')
     .eq('doc_id', docId)
     .order('signed_at', { ascending: true });
-
-  const sigWidth = width * 0.25;
-  let yOffset = 30;
 
   for (const signer of signers) {
     if (!signer.signature_data) continue;
@@ -33,9 +30,14 @@ async function generateFinalPDF(docId) {
       ? await pdfDoc.embedJpg(sigBuffer)
       : await pdfDoc.embedPng(sigBuffer);
 
-    const sh = sigImage.height * (sigWidth / sigImage.width);
-    firstPage.drawImage(sigImage, { x: width - sigWidth - 20, y: yOffset, width: sigWidth, height: sh });
-    yOffset += sh + 15;
+    if (signer.sig_x != null) {
+      firstPage.drawImage(sigImage, { x: signer.sig_x, y: signer.sig_y, width: signer.sig_w, height: signer.sig_h });
+    } else {
+      // Fallback: stack at bottom-right if no field was placed
+      const sw = width * 0.25;
+      const sh = sigImage.height * (sw / sigImage.width);
+      firstPage.drawImage(sigImage, { x: width - sw - 20, y: 30, width: sw, height: sh });
+    }
   }
 
   const finalBuffer = Buffer.from(await pdfDoc.save());

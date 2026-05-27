@@ -8,708 +8,126 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
     <script src="https://unpkg.com/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-        
-        html, body {
-            width: 100%;
-            height: 100%;
-        }
-        
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
-            background: linear-gradient(135deg, #f0f4f8 0%, #d9e2ec 100%);
-            min-height: 100vh;
-            color: #1a1a1a;
-        }
-        
-        .header {
-            background: rgba(255, 255, 255, 0.95);
-            backdrop-filter: blur(10px);
-            border-bottom: 1px solid #e2e8f0;
-            padding: 20px 30px;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
-        }
-        
-        .header-content {
-            max-width: 1200px;
-            margin: 0 auto;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-        
-        .logo {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            font-size: 24px;
-            font-weight: bold;
-            color: #1e40af;
-        }
-        
-        .logo-icon {
-            width: 40px;
-            height: 40px;
-            background: linear-gradient(135deg, #2563eb, #1e40af);
-            border-radius: 8px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: white;
-            font-size: 20px;
-        }
-        
-        .container {
-            max-width: 1200px;
-            margin: 0 auto;
-            padding: 40px 30px;
-        }
-        
-        .view {
-            display: none;
-        }
-        
-        .view.active {
-            display: block;
-        }
-        
-        .upload-box {
-            background: white;
-            border: 4px dashed #2563eb;
-            border-radius: 16px;
-            padding: 80px 40px;
-            text-align: center;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            margin-bottom: 40px;
-        }
-        
-        .upload-box:hover {
-            background-color: #f0f7ff;
-            border-color: #1e40af;
-        }
-        
-        .upload-box h2 {
-            font-size: 32px;
-            margin-bottom: 16px;
-            color: #1a1a1a;
-        }
-        
-        .upload-box p {
-            font-size: 18px;
-            color: #64748b;
-            margin-bottom: 20px;
-        }
-        
-        .upload-icon {
-            font-size: 80px;
-            margin-bottom: 20px;
-        }
-        
-        .hidden-input {
-            display: none;
-        }
-        
-        .docs-section {
-            display: none;
-        }
-        
-        .docs-section.show {
-            display: block;
-        }
-        
-        .docs-title {
-            font-size: 28px;
-            margin-bottom: 24px;
-            color: #1a1a1a;
-        }
-        
-        .docs-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
-            gap: 24px;
-            margin-bottom: 40px;
-        }
-        
-        .doc-card {
-            background: white;
-            border: 1px solid #e2e8f0;
-            border-radius: 12px;
-            overflow: hidden;
-            transition: all 0.3s ease;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
-        }
-        
-        .doc-card:hover {
-            box-shadow: 0 12px 24px rgba(0,0,0,0.15);
-            border-color: #2563eb;
-            transform: translateY(-4px);
-        }
-        
-        .doc-thumbnail {
-            width: 100%;
-            height: 200px;
-            background: linear-gradient(135deg, #f1f5f9, #e2e8f0);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 60px;
-        }
-        
-        .doc-content {
-            padding: 20px;
-        }
-        
-        .doc-title {
-            font-weight: 700;
-            margin-bottom: 8px;
-            font-size: 16px;
-            word-break: break-word;
-        }
-        
-        .doc-meta {
-            font-size: 13px;
-            color: #94a3b8;
-            margin-bottom: 16px;
-        }
-        
-        .doc-badges {
-            display: flex;
-            gap: 8px;
-            margin-bottom: 16px;
-            flex-wrap: wrap;
-        }
-        
-        .badge {
-            font-size: 11px;
-            padding: 6px 12px;
-            border-radius: 4px;
-            font-weight: 600;
-        }
-        
-        .badge-pending {
-            background: #fef3c7;
-            color: #92400e;
-        }
-        
-        .badge-signed {
-            background: #dcfce7;
-            color: #166534;
-        }
-        
-        .doc-actions {
-            display: flex;
-            gap: 8px;
-        }
-        
-        .btn {
-            padding: 10px 16px;
-            border: none;
-            border-radius: 6px;
-            cursor: pointer;
-            font-weight: 600;
-            transition: all 0.2s ease;
-            font-size: 14px;
-        }
-        
-        .btn-primary {
-            background: #2563eb;
-            color: white;
-            flex: 1;
-        }
-        
-        .btn-primary:hover:not(:disabled) {
-            background: #1d4ed8;
-        }
-        
-        .btn-primary:disabled {
-            background: #cbd5e1;
-            cursor: not-allowed;
-        }
-        
-        .btn-danger {
-            background: #fee2e2;
-            color: #dc2626;
-            padding: 10px 8px;
-        }
-        
-        .btn-danger:hover {
-            background: #fecaca;
-        }
-        
-        .empty-msg {
-            text-align: center;
-            padding: 80px 20px;
-            color: #94a3b8;
-            font-size: 18px;
-        }
-        
-        .back-btn {
-            color: #2563eb;
-            cursor: pointer;
-            font-weight: 600;
-            font-size: 16px;
-            margin-bottom: 30px;
-        }
-        
-        .back-btn:hover {
-            text-decoration: underline;
-        }
-        
-        .detail-layout {
-            display: grid;
-            grid-template-columns: 2fr 1fr;
-            gap: 32px;
-        }
-        
-        @media (max-width: 768px) {
-            .detail-layout {
-                grid-template-columns: 1fr;
-            }
-        }
-        
-        .doc-display-box {
-            background: white;
-            border: 1px solid #e2e8f0;
-            border-radius: 12px;
-            overflow: hidden;
-        }
-        
-        .doc-display-header {
-            background: #f1f5f9;
-            padding: 16px;
-            border-bottom: 1px solid #e2e8f0;
-        }
-        
-        .doc-display-header h3 {
-            font-weight: 600;
-            margin-bottom: 4px;
-        }
-        
-        .doc-display-header p {
-            font-size: 13px;
-            color: #64748b;
-        }
-        
-        .doc-viewer {
-            width: 100%;
-            height: 500px;
-            background: #f8fafc;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            overflow: auto;
-        }
-        
-        .doc-viewer img {
-            max-width: 100%;
-            max-height: 100%;
-            object-fit: contain;
-        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        html, body { width: 100%; height: 100%; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif; background: linear-gradient(135deg, #f0f4f8 0%, #d9e2ec 100%); min-height: 100vh; color: #1a1a1a; }
 
-        .doc-viewer canvas {
-            max-width: 100%;
-            height: auto;
-            display: block;
-        }
-        
-        .sig-container {
-            background: white;
-            border: 2px solid #2563eb;
-            border-radius: 12px;
-            padding: 20px;
-            margin-top: 20px;
-            display: none;
-        }
-        
-        .sig-container.show {
-            display: block;
-        }
-        
-        .sig-container h3 {
-            font-weight: 600;
-            margin-bottom: 16px;
-            color: #1e40af;
-        }
-        
-        .sig-tabs {
-            display: flex;
-            gap: 8px;
-            margin-bottom: 16px;
-            border-bottom: 2px solid #e2e8f0;
-        }
-        
-        .sig-tab {
-            padding: 10px 16px;
-            border: none;
-            background: none;
-            cursor: pointer;
-            font-weight: 600;
-            color: #64748b;
-            border-bottom: 3px solid transparent;
-            transition: all 0.2s ease;
-        }
-        
-        .sig-tab:hover {
-            color: #2563eb;
-        }
-        
-        .sig-tab.active {
-            color: #2563eb;
-            border-bottom-color: #2563eb;
-        }
-        
-        .sig-content {
-            display: none;
-        }
-        
-        .sig-content.active {
-            display: block;
-        }
-        
-        .draw-area p {
-            font-size: 14px;
-            color: #64748b;
-            margin-bottom: 12px;
-        }
-        
-        .signature-canvas {
-            width: 100%;
-            border: 2px solid #cbd5e1;
-            border-radius: 8px;
-            background: white;
-            cursor: crosshair;
-            display: block;
-            margin-bottom: 12px;
-        }
-        
-        .upload-area {
-            border: 2px dashed #cbd5e1;
-            border-radius: 8px;
-            padding: 30px;
-            text-align: center;
-            cursor: pointer;
-            transition: all 0.2s ease;
-            margin-bottom: 12px;
-        }
-        
-        .upload-area:hover {
-            border-color: #2563eb;
-            background-color: #f0f7ff;
-        }
-        
-        .upload-area p {
-            font-size: 14px;
-            color: #64748b;
-        }
-        
-        .upload-area input {
-            display: none;
-        }
-        
-        .sig-preview {
-            width: 100%;
-            height: 120px;
-            background: #f8fafc;
-            border-radius: 8px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            margin-bottom: 12px;
-            overflow: hidden;
-        }
-        
-        .sig-preview img {
-            max-width: 100%;
-            max-height: 100%;
-            object-fit: contain;
-        }
-        
-        .name-input {
-            width: 100%;
-            padding: 12px;
-            border: 1px solid #cbd5e1;
-            border-radius: 8px;
-            font-size: 14px;
-            margin-bottom: 12px;
-            font-family: inherit;
-        }
-        
-        .name-input:focus {
-            outline: none;
-            border-color: #2563eb;
-            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
-        }
-        
-        .sig-preview-generated {
-            width: 100%;
-            height: 120px;
-            background: white;
-            border: 1px solid #cbd5e1;
-            border-radius: 8px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            margin-bottom: 12px;
-            font-family: 'Great Vibes', cursive;
-            font-size: 48px;
-            color: #1a1a1a;
-            min-height: 100px;
-        }
-        
-        .canvas-buttons {
-            display: flex;
-            gap: 10px;
-        }
-        
-        .canvas-buttons button {
-            flex: 1;
-        }
-        
-        .sidebar-panel {
-            background: white;
-            border: 1px solid #e2e8f0;
-            border-radius: 12px;
-            padding: 24px;
-        }
-        
-        .sidebar-panel h3 {
-            font-weight: 600;
-            margin-bottom: 16px;
-            font-size: 16px;
-        }
-        
-        .panel-section {
-            margin-bottom: 24px;
-        }
-        
-        .panel-section:last-child {
-            margin-bottom: 0;
-        }
-        
-        .sidebar-btn {
-            width: 100%;
-            padding: 12px;
-            border: none;
-            border-radius: 8px;
-            cursor: pointer;
-            font-weight: 600;
-            font-size: 14px;
-            transition: all 0.2s ease;
-            margin-bottom: 8px;
-        }
-        
-        .sidebar-btn:disabled {
-            opacity: 0.5;
-            cursor: not-allowed;
-        }
-        
-        .sidebar-btn-primary {
-            background: #2563eb;
-            color: white;
-        }
-        
-        .sidebar-btn-primary:hover:not(:disabled) {
-            background: #1d4ed8;
-        }
-        
-        .sidebar-btn-secondary {
-            background: #e2e8f0;
-            color: #1a1a1a;
-        }
-        
-        .sidebar-btn-secondary:hover:not(:disabled) {
-            background: #cbd5e1;
-        }
-        
-        .input-group {
-            background: #f8fafc;
-            padding: 12px;
-            border-radius: 8px;
-            margin-bottom: 12px;
-        }
-        
-        .input-group input {
-            width: 100%;
-            padding: 10px;
-            border: 1px solid #cbd5e1;
-            border-radius: 6px;
-            font-size: 13px;
-            margin-bottom: 8px;
-            font-family: inherit;
-        }
-        
-        .input-group input:focus {
-            outline: none;
-            border-color: #2563eb;
-            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
-        }
-        
-        .recipients-list {
-            max-height: 250px;
-            overflow-y: auto;
-            margin-bottom: 12px;
-        }
-        
-        .recipient-item {
-            background: #f8fafc;
-            padding: 12px;
-            border-radius: 6px;
-            margin-bottom: 8px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            font-size: 13px;
-        }
-        
-        .recipient-item strong {
-            display: block;
-            margin-bottom: 2px;
-        }
-        
-        .recipient-item small {
-            color: #94a3b8;
-        }
-        
-        .success-alert {
-            background: #dcfce7;
-            border: 1px solid #86efac;
-            color: #166534;
-            padding: 12px;
-            border-radius: 8px;
-            margin-top: 16px;
-            display: none;
-            font-weight: 600;
-        }
-        
-        .success-alert.show {
-            display: block;
-        }
-        
-        .modal-overlay {
-            display: none;
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0,0,0,0.5);
-            align-items: center;
-            justify-content: center;
-            z-index: 1000;
-        }
-        
-        .modal-overlay.show {
-            display: flex;
-        }
-        
-        .modal-box {
-            background: white;
-            border-radius: 12px;
-            padding: 30px;
-            max-width: 600px;
-            width: 90%;
-            max-height: 90vh;
-            overflow-y: auto;
-        }
-        
-        .modal-box h2 {
-            margin-bottom: 20px;
-            color: #1a1a1a;
-        }
-        
-        .modal-section {
-            margin-bottom: 20px;
-        }
-        
-        .modal-section h3 {
-            font-weight: 600;
-            margin-bottom: 10px;
-            color: #1e40af;
-        }
-        
-        .modal-section p {
-            font-size: 14px;
-            color: #64748b;
-            line-height: 1.6;
-            margin-bottom: 10px;
-        }
-        
-        .recipients-display {
-            background: #f8fafc;
-            border: 1px solid #cbd5e1;
-            border-radius: 8px;
-            padding: 12px;
-            margin-bottom: 10px;
-            font-size: 13px;
-            word-break: break-all;
-            font-family: monospace;
-        }
-        
-        .message-display {
-            background: #f8fafc;
-            border: 1px solid #cbd5e1;
-            border-radius: 8px;
-            padding: 12px;
-            margin-bottom: 10px;
-            font-size: 13px;
-            white-space: pre-wrap;
-            line-height: 1.5;
-        }
-        
-        .modal-buttons {
-            display: flex;
-            gap: 10px;
-            margin-top: 20px;
-        }
-        
-        .modal-buttons button {
-            flex: 1;
-            padding: 12px;
-            border: none;
-            border-radius: 8px;
-            cursor: pointer;
-            font-weight: 600;
-            transition: all 0.2s ease;
-        }
-        
-        .modal-btn-primary {
-            background: #2563eb;
-            color: white;
-        }
-        
-        .modal-btn-primary:hover {
-            background: #1d4ed8;
-        }
-        
-        .modal-btn-secondary {
-            background: #e2e8f0;
-            color: #1a1a1a;
-        }
-        
-        .modal-btn-secondary:hover {
-            background: #cbd5e1;
-        }
-        
-        .success-badge {
-            background: #dcfce7;
-            color: #166534;
-            padding: 8px 12px;
-            border-radius: 6px;
-            font-weight: 600;
-            font-size: 13px;
-            display: inline-block;
-            margin: 10px 0;
-        }
+        .header { background: rgba(255,255,255,0.95); backdrop-filter: blur(10px); border-bottom: 1px solid #e2e8f0; padding: 20px 30px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
+        .header-content { max-width: 1200px; margin: 0 auto; display: flex; justify-content: space-between; align-items: center; }
+        .logo { display: flex; align-items: center; gap: 12px; font-size: 24px; font-weight: bold; color: #1e40af; }
+        .logo-icon { width: 40px; height: 40px; background: linear-gradient(135deg, #2563eb, #1e40af); border-radius: 8px; display: flex; align-items: center; justify-content: center; color: white; font-size: 20px; }
+        .container { max-width: 1200px; margin: 0 auto; padding: 40px 30px; }
+        .view { display: none; }
+        .view.active { display: block; }
 
-        @keyframes slideIn {
-            from { transform: translateX(100%); opacity: 0; }
-            to   { transform: translateX(0);    opacity: 1; }
-        }
+        .upload-box { background: white; border: 4px dashed #2563eb; border-radius: 16px; padding: 80px 40px; text-align: center; cursor: pointer; transition: all 0.3s ease; margin-bottom: 40px; }
+        .upload-box:hover { background-color: #f0f7ff; border-color: #1e40af; }
+        .upload-box h2 { font-size: 32px; margin-bottom: 16px; color: #1a1a1a; }
+        .upload-box p { font-size: 18px; color: #64748b; margin-bottom: 20px; }
+        .upload-icon { font-size: 80px; margin-bottom: 20px; }
+        .hidden-input { display: none; }
+
+        .docs-section { display: none; }
+        .docs-section.show { display: block; }
+        .docs-title { font-size: 28px; margin-bottom: 24px; color: #1a1a1a; }
+        .docs-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 24px; margin-bottom: 40px; }
+
+        .doc-card { background: white; border: 1px solid #e2e8f0; border-radius: 12px; overflow: hidden; transition: all 0.3s ease; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
+        .doc-card:hover { box-shadow: 0 12px 24px rgba(0,0,0,0.15); border-color: #2563eb; transform: translateY(-4px); }
+        .doc-thumbnail { width: 100%; height: 200px; background: linear-gradient(135deg, #f1f5f9, #e2e8f0); display: flex; align-items: center; justify-content: center; font-size: 60px; }
+        .doc-content { padding: 20px; }
+        .doc-title { font-weight: 700; margin-bottom: 8px; font-size: 16px; word-break: break-word; }
+        .doc-meta { font-size: 13px; color: #94a3b8; margin-bottom: 16px; }
+        .doc-badges { display: flex; gap: 8px; margin-bottom: 16px; flex-wrap: wrap; }
+        .badge { font-size: 11px; padding: 6px 12px; border-radius: 4px; font-weight: 600; }
+        .badge-pending { background: #fef3c7; color: #92400e; }
+        .badge-signed { background: #dcfce7; color: #166534; }
+        .doc-actions { display: flex; gap: 8px; }
+
+        .btn { padding: 10px 16px; border: none; border-radius: 6px; cursor: pointer; font-weight: 600; transition: all 0.2s ease; font-size: 14px; }
+        .btn-primary { background: #2563eb; color: white; flex: 1; }
+        .btn-primary:hover:not(:disabled) { background: #1d4ed8; }
+        .btn-primary:disabled { background: #cbd5e1; cursor: not-allowed; }
+        .btn-danger { background: #fee2e2; color: #dc2626; padding: 10px 8px; }
+        .btn-danger:hover { background: #fecaca; }
+
+        .empty-msg { text-align: center; padding: 80px 20px; color: #94a3b8; font-size: 18px; }
+        .back-btn { color: #2563eb; cursor: pointer; font-weight: 600; font-size: 16px; margin-bottom: 30px; }
+        .back-btn:hover { text-decoration: underline; }
+
+        .detail-layout { display: grid; grid-template-columns: 2fr 1fr; gap: 32px; }
+        @media (max-width: 768px) { .detail-layout { grid-template-columns: 1fr; } }
+
+        .doc-display-box { background: white; border: 1px solid #e2e8f0; border-radius: 12px; overflow: hidden; }
+        .doc-display-header { background: #f1f5f9; padding: 16px; border-bottom: 1px solid #e2e8f0; }
+        .doc-display-header h3 { font-weight: 600; margin-bottom: 4px; }
+        .doc-display-header p { font-size: 13px; color: #64748b; }
+
+        .placement-banner { display: none; background: #1e40af; color: white; padding: 10px 16px; font-size: 13px; font-weight: 600; }
+        .placement-banner.show { display: flex; align-items: center; justify-content: space-between; }
+        .placement-cancel-btn { background: rgba(255,255,255,0.2); border: none; color: white; padding: 4px 10px; border-radius: 4px; cursor: pointer; font-weight: 600; font-size: 12px; }
+        .placement-cancel-btn:hover { background: rgba(255,255,255,0.3); }
+
+        .doc-viewer { width: 100%; min-height: 300px; max-height: 600px; background: #f8fafc; display: flex; align-items: flex-start; justify-content: center; overflow: auto; }
+        .doc-viewer img { max-width: 100%; max-height: 100%; object-fit: contain; }
+        .doc-viewer canvas { max-width: 100%; height: auto; display: block; }
+
+        #pdfWrapper { display: none; position: relative; line-height: 0; width: fit-content; max-width: 100%; }
+        #overlayCanvas { position: absolute; top: 0; left: 0; max-width: 100%; height: auto; pointer-events: none; cursor: default; }
+
+        .sig-container { background: white; border: 2px solid #2563eb; border-radius: 12px; padding: 20px; margin-top: 20px; display: none; }
+        .sig-container.show { display: block; }
+        .sig-container h3 { font-weight: 600; margin-bottom: 16px; color: #1e40af; }
+        .sig-tabs { display: flex; gap: 8px; margin-bottom: 16px; border-bottom: 2px solid #e2e8f0; }
+        .sig-tab { padding: 10px 16px; border: none; background: none; cursor: pointer; font-weight: 600; color: #64748b; border-bottom: 3px solid transparent; transition: all 0.2s ease; }
+        .sig-tab:hover { color: #2563eb; }
+        .sig-tab.active { color: #2563eb; border-bottom-color: #2563eb; }
+        .sig-content { display: none; }
+        .sig-content.active { display: block; }
+        .draw-area p { font-size: 14px; color: #64748b; margin-bottom: 12px; }
+        .signature-canvas { width: 100%; border: 2px solid #cbd5e1; border-radius: 8px; background: white; cursor: crosshair; display: block; margin-bottom: 12px; }
+        .upload-area { border: 2px dashed #cbd5e1; border-radius: 8px; padding: 30px; text-align: center; cursor: pointer; transition: all 0.2s ease; margin-bottom: 12px; }
+        .upload-area:hover { border-color: #2563eb; background-color: #f0f7ff; }
+        .upload-area p { font-size: 14px; color: #64748b; }
+        .upload-area input { display: none; }
+        .sig-preview { width: 100%; height: 120px; background: #f8fafc; border-radius: 8px; display: flex; align-items: center; justify-content: center; margin-bottom: 12px; overflow: hidden; }
+        .sig-preview img { max-width: 100%; max-height: 100%; object-fit: contain; }
+        .name-input { width: 100%; padding: 12px; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 14px; margin-bottom: 12px; font-family: inherit; }
+        .name-input:focus { outline: none; border-color: #2563eb; box-shadow: 0 0 0 3px rgba(37,99,235,0.1); }
+        .sig-preview-generated { width: 100%; height: 120px; background: white; border: 1px solid #cbd5e1; border-radius: 8px; display: flex; align-items: center; justify-content: center; margin-bottom: 12px; font-family: 'Great Vibes', cursive; font-size: 48px; color: #1a1a1a; min-height: 100px; }
+        .canvas-buttons { display: flex; gap: 10px; }
+        .canvas-buttons button { flex: 1; }
+
+        .success-alert { background: #dcfce7; border: 1px solid #86efac; color: #166534; padding: 12px; border-radius: 8px; margin-top: 16px; display: none; font-weight: 600; }
+        .success-alert.show { display: block; }
+
+        .sidebar-panel { background: white; border: 1px solid #e2e8f0; border-radius: 12px; padding: 24px; }
+        .sidebar-panel h3 { font-weight: 600; margin-bottom: 16px; font-size: 16px; }
+        .panel-section { margin-bottom: 24px; }
+        .panel-section:last-child { margin-bottom: 0; }
+        .sidebar-btn { width: 100%; padding: 12px; border: none; border-radius: 8px; cursor: pointer; font-weight: 600; font-size: 14px; transition: all 0.2s ease; margin-bottom: 8px; }
+        .sidebar-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+        .sidebar-btn-primary { background: #2563eb; color: white; }
+        .sidebar-btn-primary:hover:not(:disabled) { background: #1d4ed8; }
+        .sidebar-btn-secondary { background: #e2e8f0; color: #1a1a1a; }
+        .sidebar-btn-secondary:hover:not(:disabled) { background: #cbd5e1; }
+
+        .input-group { background: #f8fafc; padding: 12px; border-radius: 8px; margin-bottom: 12px; }
+        .input-group input { width: 100%; padding: 10px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 13px; margin-bottom: 8px; font-family: inherit; }
+        .input-group input:focus { outline: none; border-color: #2563eb; box-shadow: 0 0 0 3px rgba(37,99,235,0.1); }
+
+        .recipients-list { max-height: 300px; overflow-y: auto; margin-bottom: 12px; }
+        .recipient-item { background: #f8fafc; padding: 10px 12px; border-radius: 6px; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: flex-start; font-size: 13px; gap: 8px; }
+        .recipient-item strong { display: block; margin-bottom: 2px; }
+        .recipient-item small { color: #94a3b8; }
+        .field-placed-badge { display: inline-block; background: #dcfce7; color: #166534; font-size: 11px; padding: 2px 8px; border-radius: 10px; font-weight: 600; margin-top: 4px; }
+        .place-field-btn { background: #eff6ff; color: #2563eb; border: 1px solid #bfdbfe; border-radius: 4px; padding: 3px 8px; font-size: 11px; font-weight: 600; cursor: pointer; margin-top: 4px; display: inline-block; }
+        .place-field-btn:hover { background: #dbeafe; }
+
+        .fields-hint { font-size: 12px; color: #64748b; background: #fef9c3; border: 1px solid #fde68a; border-radius: 6px; padding: 8px 10px; margin-bottom: 10px; display: none; }
+        .fields-hint.show { display: block; }
+
+        @keyframes slideIn { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
     </style>
 </head>
 <body>
@@ -722,57 +140,55 @@
             <div id="docCounter" style="font-size: 14px; color: #64748b;">0 documents</div>
         </div>
     </div>
-    
+
     <div class="container">
         <!-- DASHBOARD -->
         <div id="dashView" class="view active">
             <div class="upload-box" id="uploadBox">
                 <div class="upload-icon">📤</div>
                 <h2>Upload Document</h2>
-                <p>Click here to select a file</p>
+                <p>Click here to select a PDF file</p>
             </div>
-            
-            <input type="file" id="fileUpload" class="hidden-input" accept=".pdf,.png,.jpg,.jpeg,.doc,.docx">
-            
+            <input type="file" id="fileUpload" class="hidden-input" accept=".pdf,.png,.jpg,.jpeg">
             <div id="docsArea" class="docs-section">
                 <div class="docs-title">Your Documents</div>
                 <div id="docsList" class="docs-grid"></div>
             </div>
-            
-            <div id="noDocsMsg" class="empty-msg">
-                No documents uploaded yet. Click above to upload your first document!
-            </div>
+            <div id="noDocsMsg" class="empty-msg">No documents uploaded yet. Click above to upload your first document!</div>
         </div>
-        
+
         <!-- DOCUMENT DETAIL -->
         <div id="detailView" class="view">
             <div class="back-btn" onclick="goBack()">← Back to Documents</div>
-            
             <div class="detail-layout">
-                <!-- Left: Document -->
+                <!-- Left: Document viewer -->
                 <div>
                     <div class="doc-display-box">
                         <div class="doc-display-header">
                             <h3 id="detailTitle"></h3>
                             <p id="detailSize"></p>
                         </div>
+                        <div id="placementBanner" class="placement-banner">
+                            <span id="placementMsg"></span>
+                            <button class="placement-cancel-btn" onclick="exitPlacementMode()">✕ Cancel</button>
+                        </div>
                         <div class="doc-viewer">
-                            <img id="detailImg" alt="Document">
-                            <canvas id="pdfCanvas" style="display:none;"></canvas>
+                            <img id="detailImg" alt="Document" style="display:none;">
+                            <div id="pdfWrapper">
+                                <canvas id="pdfCanvas"></canvas>
+                                <canvas id="overlayCanvas"></canvas>
+                            </div>
                         </div>
                     </div>
-                    
-                    <!-- Signature Container -->
+
+                    <!-- Owner signature panel -->
                     <div id="sigBox" class="sig-container">
                         <h3>✏️ Add Your Signature</h3>
-                        
                         <div class="sig-tabs">
                             <button class="sig-tab active" onclick="switchSigTab('draw')">✏️ Draw</button>
                             <button class="sig-tab" onclick="switchSigTab('upload')">📤 Upload</button>
                             <button class="sig-tab" onclick="switchSigTab('type')">🔤 Type Name</button>
                         </div>
-                        
-                        <!-- Draw Tab -->
                         <div id="drawTab" class="sig-content active">
                             <p>Use your mouse to sign below</p>
                             <canvas id="sigPad" class="signature-canvas" width="500" height="150"></canvas>
@@ -781,8 +197,6 @@
                                 <button class="btn btn-primary" onclick="saveSig('draw')">✓ Use This</button>
                             </div>
                         </div>
-                        
-                        <!-- Upload Tab -->
                         <div id="uploadTab" class="sig-content">
                             <div class="upload-area" id="uploadArea">
                                 <p>📤 Click to upload your signature image</p>
@@ -791,21 +205,17 @@
                             <button class="btn btn-primary" id="uploadSigBtn" onclick="saveSig('upload')" style="display:none;">✓ Use This Signature</button>
                             <input type="file" id="sigUpload" class="hidden-input" accept=".png,.jpg,.jpeg,.gif">
                         </div>
-                        
-                        <!-- Type Name Tab -->
                         <div id="typeTab" class="sig-content">
-                            <p style="font-size: 14px; color: #64748b; margin-bottom: 12px;">Type your name to generate a signature</p>
+                            <p style="font-size:14px;color:#64748b;margin-bottom:12px;">Type your name to generate a signature</p>
                             <input type="text" id="nameInput" class="name-input" placeholder="Enter your name" oninput="generateSignature()">
                             <div class="sig-preview-generated" id="sigPreview">Your Name</div>
                             <button class="btn btn-primary" onclick="saveSig('type')">✓ Use This Signature</button>
                         </div>
                     </div>
-                    
-                    <div id="successMsg" class="success-alert">
-                        ✓ Document signed successfully!
-                    </div>
+
+                    <div id="successMsg" class="success-alert">✓ Document signed successfully!</div>
                 </div>
-                
+
                 <!-- Right: Sidebar -->
                 <div class="sidebar-panel">
                     <div class="panel-section">
@@ -813,17 +223,16 @@
                         <button class="sidebar-btn sidebar-btn-secondary" id="updateBtn" style="display:none;" onclick="openSigBox()">✏️ Update Signature</button>
                         <button class="sidebar-btn sidebar-btn-secondary" id="downloadBtn" style="display:none;" onclick="downloadDoc()">⬇️ Download</button>
                     </div>
-                    
+
                     <div class="panel-section">
                         <h3>📧 Send for Signature</h3>
                         <div class="input-group">
-                            <input type="text" id="vendorNameInput" placeholder="Vendor name">
+                            <input type="text" id="vendorNameInput" placeholder="Recipient name">
                             <input type="email" id="vendorEmailInput" placeholder="Email address">
                             <button class="sidebar-btn sidebar-btn-primary" onclick="addVendor()">+ Add Recipient</button>
                         </div>
-
                         <div class="recipients-list" id="vendorsList"></div>
-
+                        <div id="fieldsHint" class="fields-hint">Click <strong>Place Field</strong> on each recipient to mark where they should sign on the document.</div>
                         <button class="sidebar-btn sidebar-btn-primary" id="sendBtn" style="display:none;" onclick="sendEmails()">📤 Send Signing Links</button>
                     </div>
 
@@ -839,41 +248,7 @@
             </div>
         </div>
     </div>
-    
-    <!-- Email Modal -->
-    <div id="emailModal" class="modal-overlay">
-        <div class="modal-box">
-            <h2>📧 Send Document for Signature</h2>
-            
-            <div class="modal-section">
-                <h3>Recipients</h3>
-                <div class="recipients-display" id="modalRecipients"></div>
-                <button class="sidebar-btn sidebar-btn-secondary" onclick="copyRecipients()" style="margin-top: 10px;">📋 Copy Recipients</button>
-            </div>
-            
-            <div class="modal-section">
-                <h3>Email Message</h3>
-                <div class="message-display" id="modalMessage"></div>
-                <button class="sidebar-btn sidebar-btn-secondary" onclick="copyMessage()" style="margin-top: 10px;">📋 Copy Message</button>
-            </div>
-            
-            <div class="modal-section">
-                <h3>How to Send:</h3>
-                <p>1️⃣ Copy the recipients email(s) above</p>
-                <p>2️⃣ Open Gmail, Outlook, or your email app</p>
-                <p>3️⃣ Paste recipients in "To" field</p>
-                <p>4️⃣ Copy and paste the message</p>
-                <p>5️⃣ Send! ✉️</p>
-            </div>
-            
-            <div class="success-badge">✓ Done! Now send from your email</div>
-            
-            <div class="modal-buttons">
-                <button class="modal-btn-primary" onclick="closeEmailModal()">Close</button>
-            </div>
-        </div>
-    </div>
-    
+
     <script>
         let docs = [];
         let currentDoc = null;
@@ -883,58 +258,56 @@
         let ctx = null;
         let currentSigType = 'draw';
         let currentSigData = null;
-        
+
+        // Field placement
+        const PDF_RENDER_SCALE = 1.5;
+        const FIELD_W = 200;
+        const FIELD_H = 60;
+        let pdfPageHeightPt = 0;
+        let pdfPageWidthPt = 0;
+        let placementMode = false;
+        let placingForVendorId = null;
+        let overlayClickHandlerSet = false;
+
+        const FIELD_COLORS = ['#2563eb', '#dc2626', '#16a34a', '#d97706', '#7c3aed'];
+
         window.addEventListener('load', function() {
             canvas = document.getElementById('sigPad');
             ctx = canvas.getContext('2d');
-            
-            const uploadBox = document.getElementById('uploadBox');
-            const fileInput = document.getElementById('fileUpload');
-            
-            uploadBox.addEventListener('click', () => fileInput.click());
-            fileInput.addEventListener('change', handleUpload);
-            
-            const uploadArea = document.getElementById('uploadArea');
-            const sigUpload = document.getElementById('sigUpload');
-            
-            uploadArea.addEventListener('click', () => sigUpload.click());
-            sigUpload.addEventListener('change', handleSigUpload);
-            
+
+            document.getElementById('uploadBox').addEventListener('click', () => document.getElementById('fileUpload').click());
+            document.getElementById('fileUpload').addEventListener('change', handleUpload);
+            document.getElementById('uploadArea').addEventListener('click', () => document.getElementById('sigUpload').click());
+            document.getElementById('sigUpload').addEventListener('change', handleSigUpload);
+
             canvas.addEventListener('mousedown', startDraw);
             canvas.addEventListener('mousemove', draw);
             canvas.addEventListener('mouseup', stopDraw);
             canvas.addEventListener('mouseout', stopDraw);
-            
+
+            document.addEventListener('keydown', e => {
+                if (e.key === 'Escape' && placementMode) exitPlacementMode();
+            });
+
             loadDocs();
         });
-        
+
         function handleUpload(e) {
             const file = e.target.files[0];
             if (!file) return;
-            
             const reader = new FileReader();
             reader.onload = function(event) {
-                const newDoc = {
-                    id: Date.now(),
-                    name: file.name,
-                    size: Math.round(file.size / 1024) + ' KB',
-                    data: event.target.result,
-                    signed: false,
-                    vendors: []
-                };
-                
-                docs.unshift(newDoc);
+                docs.unshift({ id: Date.now(), name: file.name, size: Math.round(file.size / 1024) + ' KB', data: event.target.result, signed: false, vendors: [] });
                 saveDocs();
                 renderDocs();
                 e.target.value = '';
             };
             reader.readAsDataURL(file);
         }
-        
+
         function handleSigUpload(e) {
             const file = e.target.files[0];
             if (!file) return;
-            
             const reader = new FileReader();
             reader.onload = function(event) {
                 currentSigData = event.target.result;
@@ -945,24 +318,16 @@
             };
             reader.readAsDataURL(file);
         }
-        
+
         function renderDocs() {
             const counter = document.getElementById('docCounter');
             const noMsg = document.getElementById('noDocsMsg');
             const area = document.getElementById('docsArea');
             const list = document.getElementById('docsList');
-            
             counter.textContent = docs.length + ' document' + (docs.length !== 1 ? 's' : '');
-            
-            if (docs.length === 0) {
-                noMsg.style.display = 'block';
-                area.classList.remove('show');
-                return;
-            }
-            
+            if (docs.length === 0) { noMsg.style.display = 'block'; area.classList.remove('show'); return; }
             noMsg.style.display = 'none';
             area.classList.add('show');
-            
             list.innerHTML = docs.map(doc => `
                 <div class="doc-card">
                     <div class="doc-thumbnail">📄</div>
@@ -971,7 +336,7 @@
                         <div class="doc-meta">${doc.size}</div>
                         <div class="doc-badges">
                             ${doc.signed ? '<span class="badge badge-signed">✓ Signed</span>' : '<span class="badge badge-pending">⏱ Pending</span>'}
-                            ${doc.vendors.length > 0 ? `<span class="badge badge-pending">${doc.vendors.length} recipients</span>` : ''}
+                            ${doc.vendors && doc.vendors.length > 0 ? `<span class="badge badge-pending">${doc.vendors.length} recipient${doc.vendors.length > 1 ? 's' : ''}</span>` : ''}
                         </div>
                         <div class="doc-actions">
                             <button class="btn btn-primary" onclick="openDoc(${doc.id})">Open</button>
@@ -981,26 +346,27 @@
                 </div>
             `).join('');
         }
-        
+
         function openDoc(id) {
             currentDoc = docs.find(d => d.id === id);
             if (!currentDoc) return;
-            
+            exitPlacementMode();
+
             document.getElementById('detailTitle').textContent = currentDoc.name;
             document.getElementById('detailSize').textContent = currentDoc.size;
 
             const detailImg = document.getElementById('detailImg');
-            const pdfCanvas = document.getElementById('pdfCanvas');
+            const pdfWrapper = document.getElementById('pdfWrapper');
             if (isPDF(currentDoc)) {
                 detailImg.style.display = 'none';
-                pdfCanvas.style.display = 'none';
+                pdfWrapper.style.display = 'none';
                 renderPDFPreview(currentDoc.data);
             } else {
                 detailImg.src = currentDoc.data;
-                detailImg.style.display = '';
-                pdfCanvas.style.display = 'none';
+                detailImg.style.display = 'block';
+                pdfWrapper.style.display = 'none';
             }
-            
+
             if (currentDoc.signed) {
                 document.getElementById('signBtn').style.display = 'none';
                 document.getElementById('updateBtn').style.display = 'block';
@@ -1012,7 +378,7 @@
                 document.getElementById('downloadBtn').style.display = 'none';
                 document.getElementById('successMsg').classList.remove('show');
             }
-            
+
             renderVendors();
             updateSendBtn();
 
@@ -1026,43 +392,153 @@
 
             document.getElementById('dashView').classList.remove('active');
             document.getElementById('detailView').classList.add('active');
+        }
 
-            if (typeof firebase !== 'undefined') {
-                db.collection('signatures')
-                    .where('documentId', '==', currentDoc.id)
-                    .onSnapshot(snapshot => {
-                        snapshot.forEach(doc => {
-                            console.log('New signature from:', doc.data().vendorName);
-                            showNotification(`✓ ${doc.data().vendorName} signed the document!`);
-                        });
-                    });
+        // ── PDF rendering ──────────────────────────────────────────────
+
+        async function renderPDFPreview(dataUrl) {
+            pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+            const base64 = dataUrl.split(',')[1];
+            const binary = atob(base64);
+            const uint8 = new Uint8Array(binary.length);
+            for (let i = 0; i < binary.length; i++) uint8[i] = binary.charCodeAt(i);
+
+            const pdf = await pdfjsLib.getDocument({data: uint8}).promise;
+            const page = await pdf.getPage(1);
+            const naturalViewport = page.getViewport({scale: 1});
+            pdfPageWidthPt = naturalViewport.width;
+            pdfPageHeightPt = naturalViewport.height;
+
+            const viewport = page.getViewport({scale: PDF_RENDER_SCALE});
+            const pdfCanvas = document.getElementById('pdfCanvas');
+            pdfCanvas.width = viewport.width;
+            pdfCanvas.height = viewport.height;
+            await page.render({canvasContext: pdfCanvas.getContext('2d'), viewport}).promise;
+
+            const overlayCanvas = document.getElementById('overlayCanvas');
+            overlayCanvas.width = pdfCanvas.width;
+            overlayCanvas.height = pdfCanvas.height;
+
+            document.getElementById('detailImg').style.display = 'none';
+            document.getElementById('pdfWrapper').style.display = 'block';
+
+            setupOverlayClickHandler();
+            renderFieldOverlay();
+        }
+
+        // ── Field placement ────────────────────────────────────────────
+
+        function setupOverlayClickHandler() {
+            if (overlayClickHandlerSet) return;
+            overlayClickHandlerSet = true;
+            const overlayCanvas = document.getElementById('overlayCanvas');
+            overlayCanvas.addEventListener('click', function(e) {
+                if (!placementMode || !currentDoc) return;
+                const rect = overlayCanvas.getBoundingClientRect();
+                const displayX = e.clientX - rect.left;
+                const displayY = e.clientY - rect.top;
+                const scaleX = overlayCanvas.width / rect.width;
+                const scaleY = overlayCanvas.height / rect.height;
+                const pixelX = displayX * scaleX;
+                const pixelY = displayY * scaleY;
+                // Convert canvas pixels → PDF points (flip Y axis)
+                const pdfX = pixelX / PDF_RENDER_SCALE;
+                const pdfY = pdfPageHeightPt - pixelY / PDF_RENDER_SCALE;
+                // Center field on click, clamped to page bounds
+                const fieldX = Math.max(0, Math.min(pdfX - FIELD_W / 2, pdfPageWidthPt - FIELD_W));
+                const fieldY = Math.max(0, Math.min(pdfY - FIELD_H / 2, pdfPageHeightPt - FIELD_H));
+
+                const vendor = currentDoc.vendors.find(v => v.id === placingForVendorId);
+                if (!vendor) return;
+                vendor.sigField = { x: fieldX, y: fieldY, w: FIELD_W, h: FIELD_H, page: 1 };
+                saveDocs();
+                exitPlacementMode();
+                renderVendors();
+                renderFieldOverlay();
+                updateSendBtn();
+            });
+        }
+
+        function enterPlacementMode(vendorId) {
+            if (!isPDF(currentDoc)) return;
+            placementMode = true;
+            placingForVendorId = vendorId;
+            const vendor = currentDoc.vendors.find(v => v.id === vendorId);
+            document.getElementById('placementMsg').textContent =
+                `Click on the document where ${vendor.name} should sign`;
+            document.getElementById('placementBanner').classList.add('show');
+            const overlayCanvas = document.getElementById('overlayCanvas');
+            overlayCanvas.style.pointerEvents = 'all';
+            overlayCanvas.style.cursor = 'crosshair';
+        }
+
+        function exitPlacementMode() {
+            placementMode = false;
+            placingForVendorId = null;
+            document.getElementById('placementBanner').classList.remove('show');
+            const overlayCanvas = document.getElementById('overlayCanvas');
+            if (overlayCanvas) {
+                overlayCanvas.style.pointerEvents = 'none';
+                overlayCanvas.style.cursor = 'default';
             }
         }
-        
+
+        function renderFieldOverlay() {
+            const overlayCanvas = document.getElementById('overlayCanvas');
+            if (!overlayCanvas || !currentDoc || !currentDoc.vendors) return;
+            const ctx = overlayCanvas.getContext('2d');
+            ctx.clearRect(0, 0, overlayCanvas.width, overlayCanvas.height);
+
+            currentDoc.vendors.forEach((vendor, i) => {
+                if (!vendor.sigField) return;
+                const { x, y, w, h } = vendor.sigField;
+                const cx = x * PDF_RENDER_SCALE;
+                const cy = (pdfPageHeightPt - y - h) * PDF_RENDER_SCALE;
+                const cw = w * PDF_RENDER_SCALE;
+                const ch = h * PDF_RENDER_SCALE;
+                const color = FIELD_COLORS[i % FIELD_COLORS.length];
+
+                ctx.fillStyle = color + '22';
+                ctx.fillRect(cx, cy, cw, ch);
+                ctx.strokeStyle = color;
+                ctx.lineWidth = 2;
+                ctx.setLineDash([6, 3]);
+                ctx.strokeRect(cx, cy, cw, ch);
+                ctx.setLineDash([]);
+
+                ctx.fillStyle = color;
+                ctx.font = 'bold 13px sans-serif';
+                const label = vendor.name;
+                const maxW = cw - 12;
+                ctx.save();
+                ctx.rect(cx, cy, cw, ch);
+                ctx.clip();
+                ctx.fillText(label, cx + 8, cy + ch / 2 + 5);
+                ctx.restore();
+            });
+        }
+
+        // ── Signature capture (owner) ──────────────────────────────────
+
         function switchSigTab(tab) {
             currentSigType = tab;
             document.querySelectorAll('.sig-tab').forEach(t => t.classList.remove('active'));
             document.querySelectorAll('.sig-content').forEach(c => c.classList.remove('active'));
-            
             event.target.classList.add('active');
             document.getElementById(tab + 'Tab').classList.add('active');
-            
-            if (tab === 'draw') {
-                clearSig();
-            }
+            if (tab === 'draw') clearSig();
         }
-        
+
         function generateSignature() {
             const name = document.getElementById('nameInput').value;
-            const preview = document.getElementById('sigPreview');
-            preview.textContent = name || 'Your Name';
+            document.getElementById('sigPreview').textContent = name || 'Your Name';
         }
-        
+
         function openSigBox() {
             document.getElementById('sigBox').classList.add('show');
             clearSig();
         }
-        
+
         function startDraw(e) {
             isDrawing = true;
             hasDrawn = true;
@@ -1070,7 +546,7 @@
             ctx.beginPath();
             ctx.moveTo(e.clientX - rect.left, e.clientY - rect.top);
         }
-        
+
         function draw(e) {
             if (!isDrawing) return;
             const rect = canvas.getBoundingClientRect();
@@ -1081,21 +557,17 @@
             ctx.lineTo(e.clientX - rect.left, e.clientY - rect.top);
             ctx.stroke();
         }
-        
-        function stopDraw() {
-            isDrawing = false;
-        }
-        
+
+        function stopDraw() { isDrawing = false; }
+
         function clearSig() {
             ctx.clearRect(0, 0, canvas.width, canvas.height);
             hasDrawn = false;
         }
-        
+
         function saveSig(type) {
             if (!currentDoc) return;
-
             let sigDataUrl = null;
-
             if (type === 'draw') {
                 if (!hasDrawn) { alert('Please draw your signature first.'); return; }
                 sigDataUrl = canvas.toDataURL('image/png');
@@ -1114,7 +586,6 @@
                 tx.fillText(name, 10, 55);
                 sigDataUrl = tc.toDataURL('image/png');
             }
-
             if (!sigDataUrl) return;
 
             if (isPDF(currentDoc)) {
@@ -1128,18 +599,6 @@
                 return;
             }
 
-            if (currentDoc.name.toLowerCase().endsWith('.docx')) {
-                alert('DOCX signing is not supported. Please convert your document to PDF first.');
-                return;
-            }
-
-            if (!currentDoc.data.startsWith('data:image/')) {
-                currentDoc.signed = true;
-                saveDocs();
-                finalizeSig();
-                return;
-            }
-
             const docImg = new Image();
             docImg.onload = function() {
                 const mc = document.createElement('canvas');
@@ -1147,13 +606,11 @@
                 mc.height = docImg.naturalHeight;
                 const mx = mc.getContext('2d');
                 mx.drawImage(docImg, 0, 0);
-
                 const sigImg = new Image();
                 sigImg.onload = function() {
                     const sw = Math.round(mc.width * 0.3);
                     const sh = Math.round(sigImg.naturalHeight * (sw / sigImg.naturalWidth));
                     mx.drawImage(sigImg, mc.width - sw - 30, mc.height - sh - 30, sw, sh);
-
                     currentDoc.data = mc.toDataURL('image/png');
                     currentDoc.signed = true;
                     document.getElementById('detailImg').src = currentDoc.data;
@@ -1169,34 +626,12 @@
             return doc.data.startsWith('data:application/pdf') || doc.name.toLowerCase().endsWith('.pdf');
         }
 
-        async function renderPDFPreview(dataUrl) {
-            pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
-            const base64 = dataUrl.split(',')[1];
-            const binary = atob(base64);
-            const uint8 = new Uint8Array(binary.length);
-            for (let i = 0; i < binary.length; i++) uint8[i] = binary.charCodeAt(i);
-
-            const pdf = await pdfjsLib.getDocument({data: uint8}).promise;
-            const page = await pdf.getPage(1);
-            const viewport = page.getViewport({scale: 1.5});
-
-            const pdfCanvas = document.getElementById('pdfCanvas');
-            pdfCanvas.width = viewport.width;
-            pdfCanvas.height = viewport.height;
-            await page.render({canvasContext: pdfCanvas.getContext('2d'), viewport}).promise;
-
-            document.getElementById('detailImg').style.display = 'none';
-            pdfCanvas.style.display = 'block';
-        }
-
         async function embedSigInPDF(sigDataUrl) {
             const { PDFDocument } = PDFLib;
-
             const pdfBase64 = currentDoc.data.split(',')[1];
             const pdfBinary = atob(pdfBase64);
             const pdfBytes = new Uint8Array(pdfBinary.length);
             for (let i = 0; i < pdfBinary.length; i++) pdfBytes[i] = pdfBinary.charCodeAt(i);
-
             const pdfDoc = await PDFDocument.load(pdfBytes);
 
             const sigBase64 = sigDataUrl.split(',')[1];
@@ -1211,7 +646,7 @@
             const { width, height } = firstPage.getSize();
             const sw = width * 0.3;
             const sh = sigImage.height * (sw / sigImage.width);
-            firstPage.drawImage(sigImage, {x: width - sw - 30, y: 30, width: sw, height: sh});
+            firstPage.drawImage(sigImage, { x: width - sw - 30, y: 30, width: sw, height: sh });
 
             const modifiedBytes = await pdfDoc.save();
             let binary = '';
@@ -1229,113 +664,86 @@
             document.getElementById('downloadBtn').style.display = 'block';
             document.getElementById('successMsg').classList.add('show');
             updateSendBtn();
-            setTimeout(() => {
-                document.getElementById('successMsg').classList.remove('show');
-            }, 3000);
+            setTimeout(() => { document.getElementById('successMsg').classList.remove('show'); }, 3000);
         }
-        
+
+        // ── Recipient / vendor management ──────────────────────────────
+
         function addVendor() {
             const name = document.getElementById('vendorNameInput').value.trim();
             const email = document.getElementById('vendorEmailInput').value.trim();
-            
-            if (!name || !email) {
-                alert('Fill in both fields');
-                return;
-            }
-            
+            if (!name || !email) { alert('Fill in both name and email.'); return; }
             if (!currentDoc) return;
-            
-            currentDoc.vendors.push({
-                id: Date.now(),
-                name: name,
-                email: email
-            });
-            
+            currentDoc.vendors.push({ id: Date.now(), name, email, sigField: null });
             saveDocs();
             document.getElementById('vendorNameInput').value = '';
             document.getElementById('vendorEmailInput').value = '';
             renderVendors();
             updateSendBtn();
         }
-        
+
         function renderVendors() {
             const list = document.getElementById('vendorsList');
-            
+            const hint = document.getElementById('fieldsHint');
             if (!currentDoc || currentDoc.vendors.length === 0) {
                 list.innerHTML = '';
+                hint.classList.remove('show');
                 return;
             }
-            
-            list.innerHTML = currentDoc.vendors.map(v => `
-                <div class="recipient-item">
-                    <div>
-                        <strong>${v.name}</strong>
-                        <small>${v.email}</small>
+
+            const docIsPDF = isPDF(currentDoc);
+            const alreadySent = !!currentDoc.firebaseDocId;
+            const anyMissingField = docIsPDF && !alreadySent && currentDoc.vendors.some(v => !v.sigField);
+            hint.classList.toggle('show', anyMissingField);
+
+            list.innerHTML = currentDoc.vendors.map((v, i) => {
+                const color = FIELD_COLORS[i % FIELD_COLORS.length];
+                let fieldUI = '';
+                if (docIsPDF && !alreadySent) {
+                    fieldUI = v.sigField
+                        ? `<span class="field-placed-badge" style="background:${color}22;color:${color};border:1px solid ${color}66;">✓ Field placed</span>
+                           <button class="place-field-btn" style="color:${color};border-color:${color}66;" onclick="enterPlacementMode(${v.id})">Reposition</button>`
+                        : `<button class="place-field-btn" onclick="enterPlacementMode(${v.id})">📍 Place Field</button>`;
+                }
+                return `
+                    <div class="recipient-item">
+                        <div style="flex:1;">
+                            <strong>${v.name}</strong>
+                            <small>${v.email}</small>
+                            <div style="margin-top:4px;">${fieldUI}</div>
+                        </div>
+                        <button class="btn btn-danger" onclick="removeVendor(${v.id})" style="align-self:flex-start;">✕</button>
                     </div>
-                    <button class="btn btn-danger" onclick="removeVendor(${v.id})">✕</button>
-                </div>
-            `).join('');
+                `;
+            }).join('');
         }
-        
+
         function removeVendor(id) {
             if (!currentDoc) return;
+            if (placingForVendorId === id) exitPlacementMode();
             currentDoc.vendors = currentDoc.vendors.filter(v => v.id !== id);
             saveDocs();
             renderVendors();
+            renderFieldOverlay();
             updateSendBtn();
         }
-        
+
         function updateSendBtn() {
             const btn = document.getElementById('sendBtn');
-            if (currentDoc && currentDoc.signed && currentDoc.vendors.length > 0) {
+            if (!currentDoc || currentDoc.vendors.length === 0) { btn.style.display = 'none'; return; }
+            const docIsPDF = isPDF(currentDoc);
+            const allFieldsPlaced = !docIsPDF || currentDoc.vendors.every(v => v.sigField);
+            if (currentDoc.signed && allFieldsPlaced) {
                 btn.style.display = 'block';
             } else {
                 btn.style.display = 'none';
             }
         }
-        
-        function showEmailModal() {
-            if (!currentDoc) return;
-            
-            const recipients = currentDoc.vendors.map(v => v.email).join(', ');
-            const message = `Hi,
 
-Please review and sign the attached document: ${currentDoc.name}
-
-Document Details:
-- Document: ${currentDoc.name}
-- Size: ${currentDoc.size}
-- Sent on: ${new Date().toLocaleDateString()}
-
-Thank you!
-Best regards`;
-            
-            document.getElementById('modalRecipients').textContent = recipients;
-            document.getElementById('modalMessage').textContent = message;
-            document.getElementById('emailModal').classList.add('show');
-        }
-        
-        function closeEmailModal() {
-            document.getElementById('emailModal').classList.remove('show');
-        }
-        
-        function copyRecipients() {
-            const text = document.getElementById('modalRecipients').textContent;
-            navigator.clipboard.writeText(text).then(() => {
-                alert('✓ Recipients copied to clipboard!');
-            });
-        }
-        
-        function copyMessage() {
-            const text = document.getElementById('modalMessage').textContent;
-            navigator.clipboard.writeText(text).then(() => {
-                alert('✓ Message copied to clipboard!');
-            });
-        }
+        // ── Send signing links ─────────────────────────────────────────
 
         async function sendEmails() {
             if (!currentDoc || currentDoc.vendors.length === 0) return;
-
             const btn = document.getElementById('sendBtn');
             btn.disabled = true;
             btn.textContent = '📧 Sending links...';
@@ -1347,7 +755,11 @@ Best regards`;
                     body: JSON.stringify({
                         docName: currentDoc.name,
                         pdfData: currentDoc.data,
-                        signers: currentDoc.vendors.map(v => ({ name: v.name, email: v.email })),
+                        signers: currentDoc.vendors.map(v => ({
+                            name: v.name,
+                            email: v.email,
+                            sigField: v.sigField || null,
+                        })),
                         appUrl: window.location.origin,
                     }),
                 });
@@ -1356,11 +768,10 @@ Best regards`;
 
                 currentDoc.firebaseDocId = data.docId;
                 saveDocs();
-
                 btn.textContent = '✓ Links Sent!';
                 document.getElementById('statusPanel').style.display = 'block';
+                renderVendors();
                 refreshStatus();
-
                 setTimeout(() => { btn.textContent = '📤 Send Signing Links'; btn.disabled = false; }, 3000);
             } catch (err) {
                 alert('Error sending signing links: ' + err.message);
@@ -1371,54 +782,31 @@ Best regards`;
 
         async function refreshStatus() {
             if (!currentDoc || !currentDoc.firebaseDocId) return;
-
             try {
                 const res = await fetch(`/api/getDocumentStatus?docId=${currentDoc.firebaseDocId}`);
                 const data = await res.json();
                 if (!res.ok) return;
 
-                const list = document.getElementById('statusList');
-                list.innerHTML = data.signers.map(s => `
+                document.getElementById('statusList').innerHTML = data.signers.map(s => `
                     <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 10px;background:#f8fafc;border-radius:6px;margin-bottom:6px;font-size:13px;">
                         <div>
                             <strong>${s.name}</strong>
                             <div style="color:#94a3b8;">${s.email}</div>
                         </div>
-                        <span style="padding:4px 10px;border-radius:12px;font-weight:600;font-size:11px;${
-                            s.status === 'signed'
-                                ? 'background:#dcfce7;color:#166534;'
-                                : 'background:#fef3c7;color:#92400e;'
-                        }">${s.status === 'signed' ? '✓ Signed' : '⏱ Pending'}</span>
+                        <span style="padding:4px 10px;border-radius:12px;font-weight:600;font-size:11px;${s.status === 'signed' ? 'background:#dcfce7;color:#166534;' : 'background:#fef3c7;color:#92400e;'}">
+                            ${s.status === 'signed' ? '✓ Signed' : '⏱ Pending'}
+                        </span>
                     </div>
                 `).join('');
 
-                if (data.status === 'completed') {
-                    document.getElementById('completedBanner').style.display = 'block';
-                }
-
+                if (data.status === 'completed') document.getElementById('completedBanner').style.display = 'block';
                 document.getElementById('statusPanel').style.display = 'block';
             } catch (err) {
                 console.error('Status refresh failed:', err);
             }
         }
 
-        function showNotification(message) {
-            const notif = document.createElement('div');
-            notif.textContent = message;
-            notif.style.cssText = `
-                position: fixed;
-                top: 20px;
-                right: 20px;
-                background: #16a34a;
-                color: white;
-                padding: 16px 24px;
-                border-radius: 8px;
-                z-index: 10000;
-                animation: slideIn 0.3s ease;
-            `;
-            document.body.appendChild(notif);
-            setTimeout(() => notif.remove(), 3000);
-        }
+        // ── Utilities ──────────────────────────────────────────────────
 
         function downloadDoc() {
             if (!currentDoc) return;
@@ -1427,34 +815,36 @@ Best regards`;
             a.download = currentDoc.name;
             a.click();
         }
-        
+
         function delDoc(id) {
             if (!confirm('Delete this document?')) return;
             docs = docs.filter(d => d.id !== id);
             saveDocs();
             renderDocs();
         }
-        
+
         function goBack() {
+            exitPlacementMode();
             currentDoc = null;
             document.getElementById('detailView').classList.remove('active');
             document.getElementById('dashView').classList.add('active');
             document.getElementById('sigBox').classList.remove('show');
         }
-        
-        function saveDocs() {
-            localStorage.setItem('signflow_final', JSON.stringify(docs));
-        }
-        
+
+        function saveDocs() { localStorage.setItem('signflow_final', JSON.stringify(docs)); }
         function loadDocs() {
             const saved = localStorage.getItem('signflow_final');
-            if (saved) {
-                docs = JSON.parse(saved);
-            }
+            if (saved) docs = JSON.parse(saved);
             renderDocs();
         }
 
-                
+        function showNotification(message) {
+            const notif = document.createElement('div');
+            notif.textContent = message;
+            notif.style.cssText = 'position:fixed;top:20px;right:20px;background:#16a34a;color:white;padding:16px 24px;border-radius:8px;z-index:10000;animation:slideIn 0.3s ease;';
+            document.body.appendChild(notif);
+            setTimeout(() => notif.remove(), 3000);
+        }
     </script>
 </body>
 </html>

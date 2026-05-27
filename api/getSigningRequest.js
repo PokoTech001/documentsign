@@ -52,6 +52,9 @@ export default async function handler(req, res) {
       documentName: document.name,
       signerName: signer.name,
       pdfData: `data:application/pdf;base64,${pdfBuffer.toString('base64')}`,
+      sigField: signer.sig_x != null
+        ? { x: signer.sig_x, y: signer.sig_y, w: signer.sig_w, h: signer.sig_h, page: signer.sig_page || 1 }
+        : null,
     });
   } catch (err) {
     res.status(500).json({ error: err.message });

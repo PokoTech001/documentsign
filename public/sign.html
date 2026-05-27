@@ -43,7 +43,9 @@
     .signer-badge { background: #dbeafe; color: #1e40af; padding: 6px 14px; border-radius: 20px; font-size: 13px; font-weight: 600; }
 
     .pdf-viewer { background: white; border-radius: 12px; border: 1px solid #e2e8f0; overflow: auto; display: flex; justify-content: center; padding: 16px; margin-bottom: 20px; min-height: 400px; }
+    #pdfCanvasWrapper { position: relative; line-height: 0; width: fit-content; max-width: 100%; }
     #pdfCanvas { max-width: 100%; height: auto; display: block; }
+    #sigFieldOverlay { position: absolute; top: 0; left: 0; max-width: 100%; height: auto; pointer-events: none; }
 
     .sig-panel { background: white; border-radius: 12px; border: 2px solid #2563eb; padding: 24px; }
     .sig-panel h3 { font-weight: 600; color: #1e40af; margin-bottom: 16px; }
@@ -133,7 +135,10 @@
       </div>
 
       <div class="pdf-viewer">
-        <canvas id="pdfCanvas"></canvas>
+        <div id="pdfCanvasWrapper">
+          <canvas id="pdfCanvas"></canvas>
+          <canvas id="sigFieldOverlay"></canvas>
+        </div>
       </div>
 
       <div class="sig-panel">
@@ -190,6 +195,8 @@
     let drawCanvas, drawCtx, isDrawing = false, hasDrawn = false;
     let uploadedSigData = null;
     let currentToken = null;
+    let pdfPageHeightPt = 0;
+    const PDF_RENDER_SCALE = 1.5;
 
     function setState(id) {
       document.querySelectorAll('.state').forEach(s => s.classList.remove('active'));
@@ -227,7 +234,7 @@
         document.getElementById('signerName').textContent = data.signerName;
 
         setState('signingState');
-        await renderPDF(data.pdfData);
+        await renderPDF(data.pdfData, data.sigField);
         initDrawCanvas();
 
       } catch (err) {
@@ -236,7 +243,7 @@
       }
     }
 
-    async function renderPDF(pdfData) {
+    async function renderPDF(pdfData, sigField) {
       const base64 = pdfData.split(',')[1];
       const binary = atob(base64);
       const uint8 = new Uint8Array(binary.length);
@@ -244,12 +251,42 @@
 
       const pdf = await pdfjsLib.getDocument({data: uint8}).promise;
       const page = await pdf.getPage(1);
-      const viewport = page.getViewport({scale: 1.5});
+      pdfPageHeightPt = page.getViewport({scale: 1}).height;
+      const viewport = page.getViewport({scale: PDF_RENDER_SCALE});
 
       const canvas = document.getElementById('pdfCanvas');
       canvas.width = viewport.width;
       canvas.height = viewport.height;
       await page.render({canvasContext: canvas.getContext('2d'), viewport}).promise;
+
+      if (sigField && sigField.x != null) {
+        showFieldHighlight(sigField);
+      }
+    }
+
+    function showFieldHighlight(sigField) {
+      const pdfCanvas = document.getElementById('pdfCanvas');
+      const overlay = document.getElementById('sigFieldOverlay');
+      overlay.width = pdfCanvas.width;
+      overlay.height = pdfCanvas.height;
+
+      const ctx = overlay.getContext('2d');
+      const x = sigField.x * PDF_RENDER_SCALE;
+      const y = (pdfPageHeightPt - sigField.y - sigField.h) * PDF_RENDER_SCALE;
+      const w = sigField.w * PDF_RENDER_SCALE;
+      const h = sigField.h * PDF_RENDER_SCALE;
+
+      ctx.fillStyle = 'rgba(37, 99, 235, 0.1)';
+      ctx.fillRect(x, y, w, h);
+      ctx.strokeStyle = '#2563eb';
+      ctx.lineWidth = 2.5;
+      ctx.setLineDash([6, 3]);
+      ctx.strokeRect(x, y, w, h);
+      ctx.setLineDash([]);
+
+      ctx.fillStyle = '#1e40af';
+      ctx.font = 'bold 13px sans-serif';
+      ctx.fillText('Sign here', x + 8, y + h / 2 + 5);
     }
 
     function initDrawCanvas() {

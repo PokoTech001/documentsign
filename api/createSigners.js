@@ -16,15 +16,10 @@ export default async function handler(req, res) {
 
     const { error: storageError } = await supabase.storage
       .from('documents')
-      .upload(`pdfs/${docId}/document.pdf`, buffer, {
-        contentType: 'application/pdf',
-        upsert: true,
-      });
+      .upload(`pdfs/${docId}/document.pdf`, buffer, { contentType: 'application/pdf', upsert: true });
     if (storageError) throw storageError;
 
-    const { error: docError } = await supabase
-      .from('documents')
-      .insert({ id: docId, name: docName, status: 'pending' });
+    const { error: docError } = await supabase.from('documents').insert({ id: docId, name: docName, status: 'pending' });
     if (docError) throw docError;
 
     const expiry = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString();
@@ -33,23 +28,25 @@ export default async function handler(req, res) {
     for (const signer of signers) {
       const signerId = crypto.randomUUID();
       const token = crypto.randomUUID();
+      const field = signer.sigField || {};
 
-      const { error: signerError } = await supabase
-        .from('signers')
-        .insert({
-          id: signerId,
-          doc_id: docId,
-          name: signer.name,
-          email: signer.email,
-          token,
-          status: 'pending',
-          token_expiry: expiry,
-        });
+      const { error: signerError } = await supabase.from('signers').insert({
+        id: signerId,
+        doc_id: docId,
+        name: signer.name,
+        email: signer.email,
+        token,
+        status: 'pending',
+        token_expiry: expiry,
+        sig_x: field.x ?? null,
+        sig_y: field.y ?? null,
+        sig_w: field.w ?? null,
+        sig_h: field.h ?? null,
+        sig_page: field.page ?? 1,
+      });
       if (signerError) throw signerError;
 
-      const { error: tokenError } = await supabase
-        .from('tokens')
-        .insert({ token, doc_id: docId, signer_id: signerId, expiry });
+      const { error: tokenError } = await supabase.from('tokens').insert({ token, doc_id: docId, signer_id: signerId, expiry });
       if (tokenError) throw tokenError;
 
       const signingLink = `${appUrl}/sign.html?token=${token}`;
@@ -64,8 +61,7 @@ export default async function handler(req, res) {
             <p>Hi ${signer.name},</p>
             <p>You have been requested to sign: <strong>${docName}</strong></p>
             <p style="margin:30px 0;">
-              <a href="${signingLink}"
-                 style="background:#2563eb;color:white;padding:14px 28px;border-radius:6px;text-decoration:none;font-weight:bold;display:inline-block;">
+              <a href="${signingLink}" style="background:#2563eb;color:white;padding:14px 28px;border-radius:6px;text-decoration:none;font-weight:bold;display:inline-block;">
                 Click Here to Sign
               </a>
             </p>
