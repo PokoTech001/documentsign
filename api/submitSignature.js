@@ -1,8 +1,8 @@
 const { supabase } = require('./_supabase');
 const { PDFDocument } = require('pdf-lib');
-const sgMail = require('@sendgrid/mail');
+const { Resend } = require('resend');
 
-sgMail.setApiKey(process.env.SENDGRID_API_KEY);
+const resend = new Resend(process.env.RESEND_API_KEY);
 
 async function generateFinalPDF(docId) {
   const { data: blob, error } = await supabase.storage
@@ -55,12 +55,10 @@ async function emailFinalPDF(docId, finalBuffer) {
   const { data: document } = await supabase.from('documents').select('name').eq('id', docId).single();
   const { data: signers } = await supabase.from('signers').select('email').eq('doc_id', docId);
 
-  const base64PDF = finalBuffer.toString('base64');
-
   for (const signer of signers) {
-    await sgMail.send({
-      to: signer.email,
+    await resend.emails.send({
       from: process.env.FROM_EMAIL,
+      to: signer.email,
       subject: `Fully Signed: "${document.name}"`,
       html: `
         <div style="font-family:sans-serif;max-width:600px;margin:0 auto;">
@@ -70,10 +68,8 @@ async function emailFinalPDF(docId, finalBuffer) {
         </div>
       `,
       attachments: [{
-        content: base64PDF,
         filename: `signed_${document.name}`,
-        type: 'application/pdf',
-        disposition: 'attachment',
+        content: finalBuffer,
       }],
     });
   }

@@ -1,8 +1,8 @@
 const { supabase } = require('./_supabase');
-const sgMail = require('@sendgrid/mail');
+const { Resend } = require('resend');
 const crypto = require('crypto');
 
-sgMail.setApiKey(process.env.SENDGRID_API_KEY);
+const resend = new Resend(process.env.RESEND_API_KEY);
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).end();
@@ -54,9 +54,9 @@ export default async function handler(req, res) {
 
       const signingLink = `${appUrl}/sign.html?token=${token}`;
 
-      await sgMail.send({
-        to: signer.email,
+      await resend.emails.send({
         from: process.env.FROM_EMAIL,
+        to: signer.email,
         subject: `Action Required: Please Sign "${docName}"`,
         html: `
           <div style="font-family:sans-serif;max-width:600px;margin:0 auto;">
