@@ -266,6 +266,7 @@
         let pdfPageHeightPt = 0;
         let pdfPageWidthPt = 0;
         let placementMode = false;
+        let ownerPlacementMode = false;
         let placingForVendorId = null;
         let overlayClickHandlerSet = false;
 
@@ -297,7 +298,7 @@
             if (!file) return;
             const reader = new FileReader();
             reader.onload = function(event) {
-                docs.unshift({ id: Date.now(), name: file.name, size: Math.round(file.size / 1024) + ' KB', data: event.target.result, signed: false, vendors: [] });
+                docs.unshift({ id: Date.now(), name: file.name, size: Math.round(file.size / 1024) + ' KB', data: event.target.result, signed: false, vendors: [], ownerSigField: null });
                 saveDocs();
                 renderDocs();
                 e.target.value = '';
@@ -448,14 +449,23 @@
                 const fieldX = Math.max(0, Math.min(pdfX - FIELD_W / 2, pdfPageWidthPt - FIELD_W));
                 const fieldY = Math.max(0, Math.min(pdfY - FIELD_H / 2, pdfPageHeightPt - FIELD_H));
 
-                const vendor = currentDoc.vendors.find(v => v.id === placingForVendorId);
-                if (!vendor) return;
-                vendor.sigField = { x: fieldX, y: fieldY, w: FIELD_W, h: FIELD_H, page: 1 };
-                saveDocs();
-                exitPlacementMode();
-                renderVendors();
-                renderFieldOverlay();
-                updateSendBtn();
+                if (ownerPlacementMode) {
+                    currentDoc.ownerSigField = { x: fieldX, y: fieldY, w: FIELD_W, h: FIELD_H };
+                    saveDocs();
+                    exitPlacementMode();
+                    renderFieldOverlay();
+                    document.getElementById('sigBox').classList.add('show');
+                    clearSig();
+                } else {
+                    const vendor = currentDoc.vendors.find(v => v.id === placingForVendorId);
+                    if (!vendor) return;
+                    vendor.sigField = { x: fieldX, y: fieldY, w: FIELD_W, h: FIELD_H, page: 1 };
+                    saveDocs();
+                    exitPlacementMode();
+                    renderVendors();
+                    renderFieldOverlay();
+                    updateSendBtn();
+                }
             });
         }
 
@@ -472,8 +482,25 @@
             overlayCanvas.style.cursor = 'crosshair';
         }
 
+        function enterOwnerPlacementMode() {
+            if (!isPDF(currentDoc)) {
+                document.getElementById('sigBox').classList.add('show');
+                clearSig();
+                return;
+            }
+            placementMode = true;
+            ownerPlacementMode = true;
+            placingForVendorId = null;
+            document.getElementById('placementMsg').textContent = 'Click on the document where you want to place your signature';
+            document.getElementById('placementBanner').classList.add('show');
+            const overlayCanvas = document.getElementById('overlayCanvas');
+            overlayCanvas.style.pointerEvents = 'all';
+            overlayCanvas.style.cursor = 'crosshair';
+        }
+
         function exitPlacementMode() {
             placementMode = false;
+            ownerPlacementMode = false;
             placingForVendorId = null;
             document.getElementById('placementBanner').classList.remove('show');
             const overlayCanvas = document.getElementById('overlayCanvas');
@@ -488,6 +515,30 @@
             if (!overlayCanvas || !currentDoc || !currentDoc.vendors) return;
             const ctx = overlayCanvas.getContext('2d');
             ctx.clearRect(0, 0, overlayCanvas.width, overlayCanvas.height);
+
+            // Owner's own signature field (dark slate)
+            if (currentDoc.ownerSigField) {
+                const { x, y, w, h } = currentDoc.ownerSigField;
+                const cx = x * PDF_RENDER_SCALE;
+                const cy = (pdfPageHeightPt - y - h) * PDF_RENDER_SCALE;
+                const cw = w * PDF_RENDER_SCALE;
+                const ch = h * PDF_RENDER_SCALE;
+                ctx.fillStyle = 'rgba(15, 23, 42, 0.08)';
+                ctx.fillRect(cx, cy, cw, ch);
+                ctx.strokeStyle = '#334155';
+                ctx.lineWidth = 2;
+                ctx.setLineDash([6, 3]);
+                ctx.strokeRect(cx, cy, cw, ch);
+                ctx.setLineDash([]);
+                ctx.fillStyle = '#334155';
+                ctx.font = 'bold 13px sans-serif';
+                ctx.save();
+                ctx.beginPath();
+                ctx.rect(cx, cy, cw, ch);
+                ctx.clip();
+                ctx.fillText('Your Signature', cx + 8, cy + ch / 2 + 5);
+                ctx.restore();
+            }
 
             currentDoc.vendors.forEach((vendor, i) => {
                 if (!vendor.sigField) return;
@@ -535,8 +586,7 @@
         }
 
         function openSigBox() {
-            document.getElementById('sigBox').classList.add('show');
-            clearSig();
+            enterOwnerPlacementMode();
         }
 
         function startDraw(e) {
@@ -644,9 +694,24 @@
 
             const firstPage = pdfDoc.getPages()[0];
             const { width, height } = firstPage.getSize();
-            const sw = width * 0.3;
-            const sh = sigImage.height * (sw / sigImage.width);
-            firstPage.drawImage(sigImage, { x: width - sw - 30, y: 30, width: sw, height: sh });
+
+            let drawX, drawY, drawW, drawH;
+            if (currentDoc.ownerSigField) {
+                const f = currentDoc.ownerSigField;
+                // Fit signature proportionally inside the placed field box
+                const sigAspect = sigImage.width / sigImage.height;
+                drawW = f.w;
+                drawH = drawW / sigAspect;
+                if (drawH > f.h) { drawH = f.h; drawW = drawH * sigAspect; }
+                drawX = f.x + (f.w - drawW) / 2;
+                drawY = f.y + (f.h - drawH) / 2;
+            } else {
+                drawW = width * 0.3;
+                drawH = sigImage.height * (drawW / sigImage.width);
+                drawX = width - drawW - 30;
+                drawY = 30;
+            }
+            firstPage.drawImage(sigImage, { x: drawX, y: drawY, width: drawW, height: drawH });
 
             const modifiedBytes = await pdfDoc.save();
             let binary = '';
