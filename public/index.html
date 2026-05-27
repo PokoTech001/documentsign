@@ -5,6 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>SignFlow - E-Signature Platform</title>
     <link href="https://fonts.googleapis.com/css2?family=Great+Vibes&display=swap" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+    <script src="https://unpkg.com/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
     <style>
         * {
             margin: 0;
@@ -307,6 +309,12 @@
             max-width: 100%;
             max-height: 100%;
             object-fit: contain;
+        }
+
+        .doc-viewer canvas {
+            max-width: 100%;
+            height: auto;
+            display: block;
         }
         
         .sig-container {
@@ -750,6 +758,7 @@
                         </div>
                         <div class="doc-viewer">
                             <img id="detailImg" alt="Document">
+                            <canvas id="pdfCanvas" style="display:none;"></canvas>
                         </div>
                     </div>
                     
@@ -812,10 +821,19 @@
                             <input type="email" id="vendorEmailInput" placeholder="Email address">
                             <button class="sidebar-btn sidebar-btn-primary" onclick="addVendor()">+ Add Recipient</button>
                         </div>
-                        
+
                         <div class="recipients-list" id="vendorsList"></div>
-                        
-                        <button class="sidebar-btn sidebar-btn-primary" id="sendBtn" style="display:none;" onclick="sendEmails()">📤 Send Emails</button>
+
+                        <button class="sidebar-btn sidebar-btn-primary" id="sendBtn" style="display:none;" onclick="sendEmails()">📤 Send Signing Links</button>
+                    </div>
+
+                    <div class="panel-section" id="statusPanel" style="display:none;">
+                        <h3>📋 Signing Status</h3>
+                        <div id="statusList" style="margin-bottom:10px;"></div>
+                        <button class="sidebar-btn sidebar-btn-secondary" onclick="refreshStatus()">↻ Refresh Status</button>
+                        <div id="completedBanner" style="display:none;background:#dcfce7;color:#166534;padding:10px;border-radius:8px;font-weight:600;margin-top:10px;font-size:13px;">
+                            ✅ All parties have signed! Final PDF has been emailed to everyone.
+                        </div>
                     </div>
                 </div>
             </div>
@@ -860,6 +878,7 @@
         let docs = [];
         let currentDoc = null;
         let isDrawing = false;
+        let hasDrawn = false;
         let canvas = null;
         let ctx = null;
         let currentSigType = 'draw';
@@ -969,7 +988,18 @@
             
             document.getElementById('detailTitle').textContent = currentDoc.name;
             document.getElementById('detailSize').textContent = currentDoc.size;
-            document.getElementById('detailImg').src = currentDoc.data;
+
+            const detailImg = document.getElementById('detailImg');
+            const pdfCanvas = document.getElementById('pdfCanvas');
+            if (isPDF(currentDoc)) {
+                detailImg.style.display = 'none';
+                pdfCanvas.style.display = 'none';
+                renderPDFPreview(currentDoc.data);
+            } else {
+                detailImg.src = currentDoc.data;
+                detailImg.style.display = '';
+                pdfCanvas.style.display = 'none';
+            }
             
             if (currentDoc.signed) {
                 document.getElementById('signBtn').style.display = 'none';
@@ -985,6 +1015,14 @@
             
             renderVendors();
             updateSendBtn();
+
+            if (currentDoc.firebaseDocId) {
+                document.getElementById('statusPanel').style.display = 'block';
+                refreshStatus();
+            } else {
+                document.getElementById('statusPanel').style.display = 'none';
+                document.getElementById('completedBanner').style.display = 'none';
+            }
 
             document.getElementById('dashView').classList.remove('active');
             document.getElementById('detailView').classList.add('active');
@@ -1027,6 +1065,7 @@
         
         function startDraw(e) {
             isDrawing = true;
+            hasDrawn = true;
             const rect = canvas.getBoundingClientRect();
             ctx.beginPath();
             ctx.moveTo(e.clientX - rect.left, e.clientY - rect.top);
@@ -1048,23 +1087,148 @@
         }
         
         function clearSig() {
-            ctx.fillStyle = 'white';
-            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            hasDrawn = false;
         }
         
         function saveSig(type) {
             if (!currentDoc) return;
-            currentDoc.signed = true;
-            saveDocs();
-            
+
+            let sigDataUrl = null;
+
+            if (type === 'draw') {
+                if (!hasDrawn) { alert('Please draw your signature first.'); return; }
+                sigDataUrl = canvas.toDataURL('image/png');
+            } else if (type === 'upload') {
+                if (!currentSigData) { alert('Please upload a signature image first.'); return; }
+                sigDataUrl = currentSigData;
+            } else if (type === 'type') {
+                const name = document.getElementById('nameInput').value.trim();
+                if (!name) { alert('Please enter your name.'); return; }
+                const tc = document.createElement('canvas');
+                tc.width = 400; tc.height = 100;
+                const tx = tc.getContext('2d');
+                tx.font = '60px "Great Vibes", cursive';
+                tx.fillStyle = '#1a1a1a';
+                tx.textBaseline = 'middle';
+                tx.fillText(name, 10, 55);
+                sigDataUrl = tc.toDataURL('image/png');
+            }
+
+            if (!sigDataUrl) return;
+
+            if (isPDF(currentDoc)) {
+                embedSigInPDF(sigDataUrl).then(newDataUrl => {
+                    currentDoc.data = newDataUrl;
+                    currentDoc.signed = true;
+                    saveDocs();
+                    renderPDFPreview(newDataUrl);
+                    finalizeSig();
+                }).catch(err => alert('Failed to embed signature: ' + err.message));
+                return;
+            }
+
+            if (currentDoc.name.toLowerCase().endsWith('.docx')) {
+                alert('DOCX signing is not supported. Please convert your document to PDF first.');
+                return;
+            }
+
+            if (!currentDoc.data.startsWith('data:image/')) {
+                currentDoc.signed = true;
+                saveDocs();
+                finalizeSig();
+                return;
+            }
+
+            const docImg = new Image();
+            docImg.onload = function() {
+                const mc = document.createElement('canvas');
+                mc.width = docImg.naturalWidth;
+                mc.height = docImg.naturalHeight;
+                const mx = mc.getContext('2d');
+                mx.drawImage(docImg, 0, 0);
+
+                const sigImg = new Image();
+                sigImg.onload = function() {
+                    const sw = Math.round(mc.width * 0.3);
+                    const sh = Math.round(sigImg.naturalHeight * (sw / sigImg.naturalWidth));
+                    mx.drawImage(sigImg, mc.width - sw - 30, mc.height - sh - 30, sw, sh);
+
+                    currentDoc.data = mc.toDataURL('image/png');
+                    currentDoc.signed = true;
+                    document.getElementById('detailImg').src = currentDoc.data;
+                    saveDocs();
+                    finalizeSig();
+                };
+                sigImg.src = sigDataUrl;
+            };
+            docImg.src = currentDoc.data;
+        }
+
+        function isPDF(doc) {
+            return doc.data.startsWith('data:application/pdf') || doc.name.toLowerCase().endsWith('.pdf');
+        }
+
+        async function renderPDFPreview(dataUrl) {
+            pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+            const base64 = dataUrl.split(',')[1];
+            const binary = atob(base64);
+            const uint8 = new Uint8Array(binary.length);
+            for (let i = 0; i < binary.length; i++) uint8[i] = binary.charCodeAt(i);
+
+            const pdf = await pdfjsLib.getDocument({data: uint8}).promise;
+            const page = await pdf.getPage(1);
+            const viewport = page.getViewport({scale: 1.5});
+
+            const pdfCanvas = document.getElementById('pdfCanvas');
+            pdfCanvas.width = viewport.width;
+            pdfCanvas.height = viewport.height;
+            await page.render({canvasContext: pdfCanvas.getContext('2d'), viewport}).promise;
+
+            document.getElementById('detailImg').style.display = 'none';
+            pdfCanvas.style.display = 'block';
+        }
+
+        async function embedSigInPDF(sigDataUrl) {
+            const { PDFDocument } = PDFLib;
+
+            const pdfBase64 = currentDoc.data.split(',')[1];
+            const pdfBinary = atob(pdfBase64);
+            const pdfBytes = new Uint8Array(pdfBinary.length);
+            for (let i = 0; i < pdfBinary.length; i++) pdfBytes[i] = pdfBinary.charCodeAt(i);
+
+            const pdfDoc = await PDFDocument.load(pdfBytes);
+
+            const sigBase64 = sigDataUrl.split(',')[1];
+            const sigBinary = atob(sigBase64);
+            const sigBytes = new Uint8Array(sigBinary.length);
+            for (let i = 0; i < sigBinary.length; i++) sigBytes[i] = sigBinary.charCodeAt(i);
+
+            const isJpeg = sigDataUrl.startsWith('data:image/jpeg') || sigDataUrl.startsWith('data:image/jpg');
+            const sigImage = isJpeg ? await pdfDoc.embedJpg(sigBytes) : await pdfDoc.embedPng(sigBytes);
+
+            const firstPage = pdfDoc.getPages()[0];
+            const { width, height } = firstPage.getSize();
+            const sw = width * 0.3;
+            const sh = sigImage.height * (sw / sigImage.width);
+            firstPage.drawImage(sigImage, {x: width - sw - 30, y: 30, width: sw, height: sh});
+
+            const modifiedBytes = await pdfDoc.save();
+            let binary = '';
+            const chunkSize = 8192;
+            for (let i = 0; i < modifiedBytes.length; i += chunkSize) {
+                binary += String.fromCharCode(...modifiedBytes.subarray(i, i + chunkSize));
+            }
+            return `data:application/pdf;base64,${btoa(binary)}`;
+        }
+
+        function finalizeSig() {
             document.getElementById('sigBox').classList.remove('show');
             document.getElementById('signBtn').style.display = 'none';
             document.getElementById('updateBtn').style.display = 'block';
             document.getElementById('downloadBtn').style.display = 'block';
             document.getElementById('successMsg').classList.add('show');
-            
             updateSendBtn();
-            
             setTimeout(() => {
                 document.getElementById('successMsg').classList.remove('show');
             }, 3000);
@@ -1169,41 +1333,73 @@ Best regards`;
             });
         }
 
-        function sendEmails() {
+        async function sendEmails() {
             if (!currentDoc || currentDoc.vendors.length === 0) return;
 
             const btn = document.getElementById('sendBtn');
             btn.disabled = true;
-            btn.textContent = '📧 Sending...';
+            btn.textContent = '📧 Sending links...';
 
-            const appLink = window.location.href;
-
-            currentDoc.vendors.forEach(vendor => {
-                fetch('/api/sendEmail', {
+            try {
+                const res = await fetch('/api/createSigners', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
-                        to: vendor.email,
-                        vendorName: vendor.name,
-                        documentName: currentDoc.name,
-                        appLink: appLink,
+                        docName: currentDoc.name,
+                        pdfData: currentDoc.data,
+                        signers: currentDoc.vendors.map(v => ({ name: v.name, email: v.email })),
+                        appUrl: window.location.origin,
                     }),
-                })
-                .then(res => res.json())
-                .then(data => {
-                    console.log('Email sent to:', vendor.email);
-                })
-                .catch(err => console.error('Error:', err));
-            });
+                });
+                const data = await res.json();
+                if (!data.success) throw new Error(data.error);
 
-            setTimeout(() => {
+                currentDoc.firebaseDocId = data.docId;
+                saveDocs();
+
+                btn.textContent = '✓ Links Sent!';
+                document.getElementById('statusPanel').style.display = 'block';
+                refreshStatus();
+
+                setTimeout(() => { btn.textContent = '📤 Send Signing Links'; btn.disabled = false; }, 3000);
+            } catch (err) {
+                alert('Error sending signing links: ' + err.message);
                 btn.disabled = false;
-                btn.textContent = '✓ Emails Sent!';
-                alert('✅ Emails sent to all vendors!');
-                setTimeout(() => {
-                    btn.textContent = '📤 Send Emails';
-                }, 2000);
-            }, 2000);
+                btn.textContent = '📤 Send Signing Links';
+            }
+        }
+
+        async function refreshStatus() {
+            if (!currentDoc || !currentDoc.firebaseDocId) return;
+
+            try {
+                const res = await fetch(`/api/getDocumentStatus?docId=${currentDoc.firebaseDocId}`);
+                const data = await res.json();
+                if (!res.ok) return;
+
+                const list = document.getElementById('statusList');
+                list.innerHTML = data.signers.map(s => `
+                    <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 10px;background:#f8fafc;border-radius:6px;margin-bottom:6px;font-size:13px;">
+                        <div>
+                            <strong>${s.name}</strong>
+                            <div style="color:#94a3b8;">${s.email}</div>
+                        </div>
+                        <span style="padding:4px 10px;border-radius:12px;font-weight:600;font-size:11px;${
+                            s.status === 'signed'
+                                ? 'background:#dcfce7;color:#166534;'
+                                : 'background:#fef3c7;color:#92400e;'
+                        }">${s.status === 'signed' ? '✓ Signed' : '⏱ Pending'}</span>
+                    </div>
+                `).join('');
+
+                if (data.status === 'completed') {
+                    document.getElementById('completedBanner').style.display = 'block';
+                }
+
+                document.getElementById('statusPanel').style.display = 'block';
+            } catch (err) {
+                console.error('Status refresh failed:', err);
+            }
         }
 
         function showNotification(message) {
