@@ -27,6 +27,7 @@ export default async function handler(req, res) {
       name: document.name,
       status: document.status,
       createdAt: document.created_at,
+      finalHash: document.final_hash || null,
       signers: signers.map(s => ({
         id: s.id,
         name: s.name,

@@ -877,7 +877,14 @@
                     </div>
                 `).join('');
 
-                if (data.status === 'completed') document.getElementById('completedBanner').style.display = 'block';
+                if (data.status === 'completed') {
+                    const banner = document.getElementById('completedBanner');
+                    banner.style.display = 'block';
+                    if (data.finalHash) {
+                        banner.innerHTML = `✅ All parties have signed! Final PDF emailed to everyone.<br>
+                            <span style="font-family:monospace;font-size:11px;opacity:0.75;word-break:break-all;">SHA-256: ${data.finalHash}</span>`;
+                    }
+                }
                 document.getElementById('statusPanel').style.display = 'block';
             } catch (err) {
                 console.error('Status refresh failed:', err);
